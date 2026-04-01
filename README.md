@@ -11,7 +11,11 @@ Monorepo for **$ANAL** / **Anal by lana.ai**: static site, Helius proxy (on-chai
 ## Chat behavior
 
 - **Explicit on-chain questions** (supply, holders, token/mint metadata, recent txs, lock schedule) are answered from Helius or fixed token facts in the browser.
-- **Everything else** goes to **Kimi** so conversations stay unique, with jokes and education about **$ANAL** and **lana.ai**; off-topic messages get a quick pivot back to the token.
+- **Everything else** goes to the chat backend so conversations stay unique, with jokes and education about **$ANAL** and **lana.ai**; off-topic messages pivot back to the token. The AnalX **system prompt** matches the site persona (DYOR, no financial advice; stack questions → “internal agent”; never keys or private transfer gossip).
+
+## Privacy (persona)
+
+- Secrets stay in Railway env vars only. Health and `/api/chat` JSON do **not** expose provider names.
 
 ## Environment variables
 

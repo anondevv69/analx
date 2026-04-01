@@ -1,6 +1,6 @@
 # AnalX AI Agent
 
-AI-powered chat backend for $ANAL token website. Uses Kimi API for truly unique, intelligent responses.
+AI-powered chat backend for $ANAL token website. The **AnalX system prompt** in `server.js` is the full public persona (lana.ai story, token table, banter, DYOR). Operators configure the LLM via env; **end users** should only hear that AnalX is an **internal agent** if they ask about stack — API responses do not name providers.
 
 ## Features
 
