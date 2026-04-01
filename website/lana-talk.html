@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Holder tools — $ANAL | Anal by lana.ai</title>
+    <title>Helius chat — $ANAL holder tools | Anal by lana.ai</title>
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Serif:wght@400;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -98,20 +98,6 @@
             font-size: 0.9rem;
         }
         .tool-btn:hover { border-color: var(--primary); color: var(--primary); }
-        pre.out {
-            margin-top: 0.75rem;
-            padding: 1rem;
-            background: #0a100e;
-            border-radius: 0.5rem;
-            font-family: 'IBM Plex Mono', monospace;
-            font-size: 0.72rem;
-            overflow-x: auto;
-            white-space: pre-wrap;
-            word-break: break-word;
-            max-height: 480px;
-            overflow-y: auto;
-            color: var(--foreground-muted);
-        }
         .links a { color: var(--primary); font-weight: 600; }
         .fine { font-size: 0.8rem; color: var(--foreground-tertiary); margin-top: 1rem; }
         .chat-input-row { display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; }
@@ -139,6 +125,99 @@
             border-radius: 0.5rem;
             font-family: inherit;
         }
+        .holder-strip p { margin: 0.2rem 0; font-size: 0.9rem; }
+        .chat-card h2 { margin-bottom: 0.35rem; }
+        .chat-messages {
+            background: var(--background-secondary);
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            padding: 0.75rem;
+            min-height: 220px;
+            max-height: min(52vh, 420px);
+            overflow-y: auto;
+            margin-bottom: 0.75rem;
+        }
+        .chat-msg { margin-bottom: 0.75rem; max-width: 100%; }
+        .chat-msg-user {
+            text-align: right;
+            color: var(--foreground-muted);
+            font-size: 0.88rem;
+        }
+        .chat-msg-user span {
+            display: inline-block;
+            background: rgba(69,179,153,0.12);
+            border: 1px solid rgba(69,179,153,0.25);
+            padding: 0.45rem 0.65rem;
+            border-radius: 0.5rem;
+            text-align: left;
+            max-width: 100%;
+            word-break: break-word;
+        }
+        .chat-msg-assistant pre {
+            margin: 0;
+            padding: 0.75rem;
+            background: #0a100e;
+            border-radius: 0.45rem;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 0.7rem;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-break: break-word;
+            color: var(--foreground-muted);
+            max-height: 360px;
+            overflow-y: auto;
+        }
+        .chat-msg-assistant .chat-label {
+            font-size: 0.72rem;
+            color: var(--primary);
+            margin-bottom: 0.35rem;
+            font-weight: 600;
+        }
+        .chat-msg-system {
+            font-size: 0.82rem;
+            color: var(--foreground-tertiary);
+            font-style: italic;
+        }
+        .chat-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.45rem;
+            margin-bottom: 0.75rem;
+        }
+        .chip {
+            font-size: 0.78rem;
+            padding: 0.35rem 0.65rem;
+            border-radius: 999px;
+            border: 1px solid var(--border);
+            background: var(--background-card);
+            color: var(--foreground-muted);
+            cursor: pointer;
+            font-family: inherit;
+        }
+        .chip:hover { border-color: var(--primary); color: var(--primary); }
+        #chat-input {
+            flex: 1;
+            min-width: 140px;
+            background: #0a100e;
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            padding: 0.65rem 0.75rem;
+            color: var(--foreground);
+            font-family: inherit;
+            font-size: 0.9rem;
+        }
+        details.advanced-rpc {
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border);
+        }
+        details.advanced-rpc summary {
+            cursor: pointer;
+            color: var(--foreground-muted);
+            font-size: 0.88rem;
+            font-weight: 600;
+        }
+        details.advanced-rpc summary:hover { color: var(--primary); }
     </style>
 </head>
 <body>
@@ -148,16 +227,18 @@
         <nav aria-label="Site">
             <a href="index.html#story">Story</a>
             <a href="index.html#token">Token</a>
-            <a href="lana-talk.html" aria-current="page">Tools</a>
+            <a href="lana-talk.html" aria-current="page">Helius chat</a>
         </nav>
     </header>
     <main>
-        <h1>Holder tools</h1>
+        <h1>Helius chat</h1>
         <p class="lede">
-            Connect a wallet; we check <strong>$ANAL</strong> for mint
-            <span style="font-family:'IBM Plex Mono',monospace;font-size:0.85rem;">95DJix…85DKvHK</span>
-            — you need <strong>≥42,069</strong> ANAL to open the tools below. Same page as the public site:
-            <a class="links" href="index.html#token">token &amp; lock</a>. DYOR.
+            Connect a wallet; we verify <strong>$ANAL</strong> (mint
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:0.85rem;">95DJix…85DKvHK</span>,
+            <strong>≥42,069</strong> ANAL). Below is a <strong>chat-style</strong> front-end to the same read-only
+            <a class="links" href="https://www.helius.dev/docs/api-reference" target="_blank" rel="noopener noreferrer">Helius</a>
+            routes (JSON-RPC, DAS, enhanced txs) — <em>not</em> an AI model; you type commands or tap shortcuts and see API JSON back.
+            <a class="links" href="index.html#token">Token &amp; lock</a>. DYOR.
         </p>
 
         <div id="panel-gate" class="card hidden">
@@ -186,42 +267,40 @@
         </div>
 
         <div id="panel-tools" class="hidden">
-            <div class="card">
-                <h2>Holder verified</h2>
+            <div class="card holder-strip">
                 <p class="status ok" id="holder-line"></p>
                 <p class="fine" id="tier-line"></p>
                 <p class="fine" id="wallet-line"></p>
             </div>
-            <div class="card" id="panel-rpc">
-                <h2>JSON-RPC</h2>
+            <div class="card chat-card">
+                <h2>Chain</h2>
                 <p style="font-size:0.85rem;color:var(--foreground-muted);margin-bottom:0.75rem;">
-                    Read-only method + <code>params</code> as JSON. <a class="links" href="https://www.helius.dev/docs/api-reference/rpc/http-methods" target="_blank" rel="noopener noreferrer">Method list</a>.
+                    Messages call the AnalX API → Helius (your key stays on the server). Type <code style="font-size:0.8rem;">help</code> for commands.
                 </p>
-                <label class="fine" for="rpc-method">Method</label>
-                <select id="rpc-method" aria-label="RPC method"></select>
-                <label class="fine" for="rpc-params" style="display:block;margin-top:0.75rem;">Params (JSON)</label>
-                <textarea id="rpc-params" spellcheck="false" aria-label="RPC params JSON">[]</textarea>
-                <button type="button" class="btn" id="btn-rpc-run">Run RPC</button>
-            </div>
-            <div class="card">
-                <h2>Wallet &amp; transactions</h2>
-                <p style="font-size:0.8rem;color:var(--foreground-tertiary);margin:0 0 0.5rem;"><strong>Your wallet</strong></p>
-                <div class="tools-grid" style="margin-bottom:1rem;">
-                    <button type="button" class="tool-btn" id="btn-my-sigs">Recent signatures</button>
-                    <button type="button" class="tool-btn" id="btn-my-das">Assets (DAS)</button>
-                    <button type="button" class="tool-btn" id="btn-my-accounts">ANAL token accounts</button>
+                <div id="chat-messages" class="chat-messages" aria-live="polite"></div>
+                <div class="chat-chips" aria-label="Quick commands">
+                    <button type="button" class="chip" data-cmd="balance">Balance</button>
+                    <button type="button" class="chip" data-cmd="sigs">Signatures</button>
+                    <button type="button" class="chip" data-cmd="assets">Assets (DAS)</button>
+                    <button type="button" class="chip" data-cmd="accounts">ANAL accounts</button>
+                    <button type="button" class="chip" data-cmd="activity">Parsed activity</button>
+                    <button type="button" class="chip" data-cmd="help">Help</button>
                 </div>
-                <p style="font-size:0.8rem;color:var(--foreground-tertiary);margin:1rem 0 0.5rem;"><strong>Parsed activity</strong></p>
-                <div class="tools-grid" style="margin-bottom:1rem;">
-                    <button type="button" class="tool-btn" id="btn-enhanced-history">Recent (enhanced)</button>
+                <div class="chat-input-row">
+                    <input type="text" id="chat-input" placeholder="balance · sigs · assets · activity · decode &lt;sig&gt;…" autocomplete="off" />
+                    <button type="button" class="btn" id="chat-send">Send</button>
                 </div>
-                <p style="font-size:0.8rem;color:var(--foreground-tertiary);margin:0 0 0.5rem;"><strong>Transaction</strong></p>
-                <div class="chat-input-row" style="margin-bottom:0.5rem;">
-                    <input type="text" id="tx-sig-input" placeholder="Signature (base58)…" autocomplete="off" style="font-size:0.85rem;" />
-                    <button type="button" class="btn btn-secondary" id="btn-tx-decode">RPC (jsonParsed)</button>
-                    <button type="button" class="btn btn-secondary" id="btn-tx-enhanced">Enhanced</button>
-                </div>
-                <pre class="out hidden" id="tool-output"></pre>
+                <details class="advanced-rpc">
+                    <summary>Advanced: custom JSON-RPC</summary>
+                    <p style="font-size:0.8rem;color:var(--foreground-muted);margin:0.75rem 0;">
+                        Read-only methods only. <a class="links" href="https://www.helius.dev/docs/api-reference/rpc/http-methods" target="_blank" rel="noopener noreferrer">RPC reference</a>.
+                    </p>
+                    <label class="fine" for="rpc-method">Method</label>
+                    <select id="rpc-method" aria-label="RPC method"></select>
+                    <label class="fine" for="rpc-params" style="display:block;margin-top:0.75rem;">Params (JSON)</label>
+                    <textarea id="rpc-params" spellcheck="false" aria-label="RPC params JSON">[]</textarea>
+                    <button type="button" class="btn" id="btn-rpc-run" style="margin-top:0.75rem;">Run RPC</button>
+                </details>
             </div>
         </div>
     </main>
@@ -313,7 +392,9 @@
         const holderLine = document.getElementById('holder-line');
         const tierLine = document.getElementById('tier-line');
         const walletLine = document.getElementById('wallet-line');
-        const toolOutput = document.getElementById('tool-output');
+        const chatMessages = document.getElementById('chat-messages');
+        const chatInput = document.getElementById('chat-input');
+        const chatSend = document.getElementById('chat-send');
         const rpcMethod = document.getElementById('rpc-method');
         const rpcParams = document.getElementById('rpc-params');
         const btnRpcRun = document.getElementById('btn-rpc-run');
@@ -322,6 +403,60 @@
         const gateStatus = document.getElementById('gate-status');
 
         let publicKey = null;
+
+        const HELIUS_HELP =
+            'Commands (all go through this app → Helius; read-only):\n\n' +
+            '• balance — SOL balance for your connected wallet\n' +
+            '• sigs — recent signatures for your wallet\n' +
+            '• assets — DAS getAssetsByOwner (your wallet)\n' +
+            '• accounts — your ANAL SPL token accounts\n' +
+            '• activity — Helius Enhanced parsed history (recent)\n' +
+            '• decode <signature> — RPC getTransaction (jsonParsed)\n' +
+            '• enhanced <signature> — Helius Enhanced parse for one tx\n' +
+            '• Or paste a full base58 tx signature on its own to decode\n\n' +
+            'Open “Advanced: custom JSON-RPC” for any allowlisted method + JSON params.';
+
+        function chatScroll() {
+            if (chatMessages) chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function appendUser(text) {
+            if (!chatMessages) return;
+            const wrap = document.createElement('div');
+            wrap.className = 'chat-msg chat-msg-user';
+            const span = document.createElement('span');
+            span.textContent = text;
+            wrap.appendChild(span);
+            chatMessages.appendChild(wrap);
+            chatScroll();
+        }
+
+        function appendAssistant(label, payload) {
+            if (!chatMessages) return;
+            const wrap = document.createElement('div');
+            wrap.className = 'chat-msg chat-msg-assistant';
+            if (label) {
+                const lab = document.createElement('div');
+                lab.className = 'chat-label';
+                lab.textContent = label;
+                wrap.appendChild(lab);
+            }
+            const pre = document.createElement('pre');
+            pre.textContent =
+                typeof payload === 'string' ? payload : JSON.stringify(payload, null, 2);
+            wrap.appendChild(pre);
+            chatMessages.appendChild(wrap);
+            chatScroll();
+        }
+
+        function appendSystem(text) {
+            if (!chatMessages) return;
+            const d = document.createElement('div');
+            d.className = 'chat-msg chat-msg-system';
+            d.textContent = text;
+            chatMessages.appendChild(d);
+            chatScroll();
+        }
 
         function abortAfter(ms) {
             if (typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function') {
@@ -466,7 +601,188 @@
             walletLine.textContent = 'Wallet: ' + publicKey;
             rpcParams.value = JSON.stringify([publicKey], null, 2);
             loadRpcMethodOptions();
+            if (chatMessages) {
+                chatMessages.innerHTML = '';
+                appendSystem(
+                    'Wallet connected. This thread talks to Helius through the API — not an AI. Try help, balance, sigs, assets, activity, or paste a transaction signature.'
+                );
+            }
             panelTools.classList.remove('hidden');
+        }
+
+        async function runHeliusChatLine(raw) {
+            if (!publicKey) {
+                appendSystem('Connect a wallet first.');
+                return;
+            }
+            const line = raw.trim();
+            if (!line) return;
+            appendUser(line);
+
+            const lower = line.toLowerCase();
+            const dec = line.match(/^\s*decode\s+(\S+)\s*$/i);
+            const enh = line.match(/^\s*enhanced\s+(\S+)\s*$/i);
+
+            try {
+                if (lower === 'help' || lower === '?' || lower === 'commands') {
+                    appendAssistant('Help', HELIUS_HELP);
+                    return;
+                }
+
+                if (lower === 'balance' || lower === 'sol' || lower === 'sol balance') {
+                    const r = await fetch(CONFIG.API_URL + '/api/helius/rpc', {
+                        method: 'POST',
+                        headers: authHeaders({ 'Content-Type': 'application/json' }),
+                        body: JSON.stringify({
+                            wallet: publicKey,
+                            method: 'getBalance',
+                            params: [publicKey],
+                        }),
+                        signal: abortAfter(60000),
+                    });
+                    const text = await r.text();
+                    if (r.status === 401) {
+                        onHolderToolsUnauthorized();
+                        appendAssistant('Error', 'Password required — unlock holder tools.');
+                        return;
+                    }
+                    appendAssistant('getBalance', JSON.parse(text));
+                    return;
+                }
+
+                if (
+                    lower === 'sigs' ||
+                    lower === 'sig' ||
+                    lower === 'signatures' ||
+                    lower === 'recent sigs'
+                ) {
+                    const r = await fetch(
+                        CONFIG.API_URL +
+                            '/api/wallet/' +
+                            encodeURIComponent(publicKey) +
+                            '/signatures?limit=25',
+                        { headers: authHeaders() }
+                    );
+                    if (r.status === 401) {
+                        onHolderToolsUnauthorized();
+                        appendAssistant('Error', 'Password required — unlock holder tools.');
+                        return;
+                    }
+                    appendAssistant('getSignaturesForAddress', await r.json());
+                    return;
+                }
+
+                if (lower === 'assets' || lower === 'das' || lower === 'my assets') {
+                    const r = await fetch(CONFIG.API_URL + '/api/das/assets-by-owner', {
+                        method: 'POST',
+                        headers: authHeaders({ 'Content-Type': 'application/json' }),
+                        body: JSON.stringify({ ownerAddress: publicKey, limit: 100 }),
+                    });
+                    const text = await r.text();
+                    if (r.status === 401) {
+                        onHolderToolsUnauthorized();
+                        appendAssistant('Error', 'Password required — unlock holder tools.');
+                        return;
+                    }
+                    appendAssistant('getAssetsByOwner', JSON.parse(text));
+                    return;
+                }
+
+                if (
+                    lower === 'accounts' ||
+                    lower === 'anal accounts' ||
+                    lower === 'token accounts'
+                ) {
+                    const r = await fetch(
+                        CONFIG.API_URL + '/api/account/' + encodeURIComponent(publicKey),
+                        { headers: authHeaders() }
+                    );
+                    if (r.status === 401) {
+                        onHolderToolsUnauthorized();
+                        appendAssistant('Error', 'Password required — unlock holder tools.');
+                        return;
+                    }
+                    appendAssistant('getTokenAccountsByOwner (ANAL)', await r.json());
+                    return;
+                }
+
+                if (
+                    lower === 'activity' ||
+                    lower === 'history' ||
+                    lower === 'parsed' ||
+                    lower === 'enhanced activity'
+                ) {
+                    const u =
+                        CONFIG.API_URL +
+                        '/api/helius/enhanced/addresses/' +
+                        encodeURIComponent(publicKey) +
+                        '/transactions?wallet=' +
+                        encodeURIComponent(publicKey) +
+                        '&limit=25';
+                    const r = await fetch(u, { signal: abortAfter(60000), headers: authHeaders() });
+                    const text = await r.text();
+                    if (r.status === 401) {
+                        onHolderToolsUnauthorized();
+                        appendAssistant('Error', 'Password required — unlock holder tools.');
+                        return;
+                    }
+                    appendAssistant('Enhanced · address history', JSON.parse(text));
+                    return;
+                }
+
+                let sig = null;
+                let mode = null;
+                if (dec) {
+                    sig = dec[1];
+                    mode = 'decode';
+                } else if (enh) {
+                    sig = enh[1];
+                    mode = 'enhanced';
+                } else if (/^[1-9A-HJ-NP-Za-km-z]{80,120}$/.test(line.trim())) {
+                    sig = line.trim();
+                    mode = 'decode';
+                }
+
+                if (sig && mode) {
+                    if (mode === 'enhanced') {
+                        const r = await fetch(CONFIG.API_URL + '/api/helius/enhanced/transactions', {
+                            method: 'POST',
+                            headers: authHeaders({ 'Content-Type': 'application/json' }),
+                            body: JSON.stringify({
+                                wallet: publicKey,
+                                transactions: [sig],
+                            }),
+                            signal: abortAfter(60000),
+                        });
+                        const text = await r.text();
+                        if (r.status === 401) {
+                            onHolderToolsUnauthorized();
+                            appendAssistant('Error', 'Password required — unlock holder tools.');
+                            return;
+                        }
+                        appendAssistant('Enhanced · parse tx', JSON.parse(text));
+                        return;
+                    }
+                    const r = await fetch(CONFIG.API_URL + '/api/tx/' + encodeURIComponent(sig), {
+                        headers: authHeaders(),
+                    });
+                    const text = await r.text();
+                    if (r.status === 401) {
+                        onHolderToolsUnauthorized();
+                        appendAssistant('Error', 'Password required — unlock holder tools.');
+                        return;
+                    }
+                    appendAssistant('getTransaction (jsonParsed)', JSON.parse(text));
+                    return;
+                }
+
+                appendAssistant(
+                    'Hint',
+                    'No match. Type help for commands, paste a tx signature, or use Advanced → custom JSON-RPC.'
+                );
+            } catch (e) {
+                appendAssistant('Error', e.message || String(e));
+            }
         }
 
         btnConnect.addEventListener('click', function () {
@@ -484,8 +800,7 @@
             panelTools.classList.add('hidden');
             panelDenied.classList.add('hidden');
             connectStatus.textContent = '';
-            toolOutput.classList.add('hidden');
-            toolOutput.textContent = '';
+            if (chatMessages) chatMessages.innerHTML = '';
             rpcParams.value = '[]';
         });
 
@@ -495,13 +810,13 @@
             try {
                 paramsParsed = JSON.parse(rpcParams.value);
             } catch (e) {
-                toolOutput.classList.remove('hidden');
-                toolOutput.textContent = 'Invalid JSON in Params: ' + (e.message || String(e));
+                appendAssistant('Error', 'Invalid JSON in Params: ' + (e.message || String(e)));
                 return;
             }
             const method = rpcMethod.value;
-            toolOutput.classList.remove('hidden');
-            toolOutput.textContent = 'Calling ' + method + '…';
+            const preview =
+                'RPC · ' + method + ' ' + rpcParams.value.slice(0, 160) + (rpcParams.value.length > 160 ? '…' : '');
+            appendUser(preview);
             try {
                 const r = await fetch(CONFIG.API_URL + '/api/helius/rpc', {
                     method: 'POST',
@@ -516,198 +831,51 @@
                 const text = await r.text();
                 if (r.status === 401) {
                     onHolderToolsUnauthorized();
-                    toolOutput.textContent = 'Password required — unlock holder tools.';
+                    appendAssistant('Error', 'Password required — unlock holder tools.');
                     return;
                 }
                 let json;
                 try {
                     json = JSON.parse(text);
                 } catch (_) {
-                    toolOutput.textContent = text;
+                    appendAssistant(method, text);
                     return;
                 }
-                toolOutput.textContent = JSON.stringify(json, null, 2);
+                appendAssistant(method, json);
             } catch (e) {
-                toolOutput.textContent = String(e);
+                appendAssistant('Error', String(e));
             }
         });
 
-        document.getElementById('btn-my-accounts').addEventListener('click', async function () {
-            if (!publicKey) return;
-            toolOutput.classList.remove('hidden');
-            toolOutput.textContent = 'Loading your token accounts…';
-            try {
-                const r = await fetch(CONFIG.API_URL + '/api/account/' + encodeURIComponent(publicKey), {
-                    headers: authHeaders(),
-                });
-                if (r.status === 401) {
-                    onHolderToolsUnauthorized();
-                    toolOutput.textContent = 'Password required — unlock holder tools.';
-                    return;
-                }
-                const json = await r.json();
-                toolOutput.textContent = JSON.stringify(json, null, 2);
-            } catch (e) {
-                toolOutput.textContent = String(e);
-            }
+        document.querySelectorAll('.chip[data-cmd]').forEach(function (chip) {
+            chip.addEventListener('click', function () {
+                const cmd = chip.getAttribute('data-cmd');
+                const map = {
+                    balance: 'balance',
+                    sigs: 'sigs',
+                    assets: 'assets',
+                    accounts: 'accounts',
+                    activity: 'activity',
+                    help: 'help',
+                };
+                if (map[cmd]) runHeliusChatLine(map[cmd]);
+            });
         });
 
-        document.getElementById('btn-my-sigs').addEventListener('click', async function () {
-            if (!publicKey) return;
-            toolOutput.classList.remove('hidden');
-            toolOutput.textContent = 'Loading signatures…';
-            try {
-                const r = await fetch(
-                    CONFIG.API_URL + '/api/wallet/' + encodeURIComponent(publicKey) + '/signatures?limit=25',
-                    { headers: authHeaders() }
-                );
-                if (r.status === 401) {
-                    onHolderToolsUnauthorized();
-                    toolOutput.textContent = 'Password required — unlock holder tools.';
-                    return;
-                }
-                const json = await r.json();
-                toolOutput.textContent = JSON.stringify(json, null, 2);
-            } catch (e) {
-                toolOutput.textContent = String(e);
+        if (chatSend && chatInput) {
+            function sendChat() {
+                const v = chatInput.value;
+                chatInput.value = '';
+                runHeliusChatLine(v);
             }
-        });
-
-        document.getElementById('btn-my-das').addEventListener('click', async function () {
-            if (!publicKey) return;
-            toolOutput.classList.remove('hidden');
-            toolOutput.textContent = 'Loading DAS assets…';
-            try {
-                const r = await fetch(CONFIG.API_URL + '/api/das/assets-by-owner', {
-                    method: 'POST',
-                    headers: authHeaders({ 'Content-Type': 'application/json' }),
-                    body: JSON.stringify({ ownerAddress: publicKey, limit: 100 }),
-                });
-                const text = await r.text();
-                if (r.status === 401) {
-                    onHolderToolsUnauthorized();
-                    toolOutput.textContent = 'Password required — unlock holder tools.';
-                    return;
+            chatSend.addEventListener('click', sendChat);
+            chatInput.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    sendChat();
                 }
-                let json;
-                try {
-                    json = JSON.parse(text);
-                } catch (_) {
-                    toolOutput.textContent = text;
-                    return;
-                }
-                toolOutput.textContent = JSON.stringify(json, null, 2);
-            } catch (e) {
-                toolOutput.textContent = String(e);
-            }
-        });
-
-        function decodeTxRpc() {
-            const sig = document.getElementById('tx-sig-input').value.trim();
-            if (!sig || sig.length < 80) {
-                toolOutput.classList.remove('hidden');
-                toolOutput.textContent = 'Paste a full Solana transaction signature (base58, ~88 chars).';
-                return;
-            }
-            toolOutput.classList.remove('hidden');
-            toolOutput.textContent = 'Loading transaction…';
-            return fetch(CONFIG.API_URL + '/api/tx/' + encodeURIComponent(sig), { headers: authHeaders() })
-                .then(function (r) {
-                    if (r.status === 401) {
-                        onHolderToolsUnauthorized();
-                        toolOutput.textContent = 'Password required — unlock holder tools.';
-                        return Promise.reject(new Error('401'));
-                    }
-                    return r.text();
-                })
-                .then(function (text) {
-                    let json;
-                    try {
-                        json = JSON.parse(text);
-                    } catch (_) {
-                        toolOutput.textContent = text;
-                        return;
-                    }
-                    toolOutput.textContent = JSON.stringify(json, null, 2);
-                })
-                .catch(function (e) {
-                    if (e && e.message === '401') return;
-                    toolOutput.textContent = String(e);
-                });
+            });
         }
-
-        document.getElementById('btn-tx-decode').addEventListener('click', decodeTxRpc);
-
-        document.getElementById('btn-tx-enhanced').addEventListener('click', async function () {
-            if (!publicKey) return;
-            const sig = document.getElementById('tx-sig-input').value.trim();
-            if (!sig || sig.length < 80) {
-                toolOutput.classList.remove('hidden');
-                toolOutput.textContent = 'Paste a full Solana transaction signature (base58, ~88 chars).';
-                return;
-            }
-            toolOutput.classList.remove('hidden');
-            toolOutput.textContent = 'Loading enhanced parse…';
-            try {
-                const r = await fetch(CONFIG.API_URL + '/api/helius/enhanced/transactions', {
-                    method: 'POST',
-                    headers: authHeaders({ 'Content-Type': 'application/json' }),
-                    body: JSON.stringify({
-                        wallet: publicKey,
-                        transactions: [sig],
-                    }),
-                    signal: abortAfter(60000),
-                });
-                const text = await r.text();
-                if (r.status === 401) {
-                    onHolderToolsUnauthorized();
-                    toolOutput.textContent = 'Password required — unlock holder tools.';
-                    return;
-                }
-                let json;
-                try {
-                    json = JSON.parse(text);
-                } catch (_) {
-                    toolOutput.textContent = text;
-                    return;
-                }
-                toolOutput.textContent = JSON.stringify(json, null, 2);
-            } catch (e) {
-                toolOutput.textContent = String(e);
-            }
-        });
-
-        document.getElementById('btn-enhanced-history').addEventListener('click', async function () {
-            if (!publicKey) return;
-            toolOutput.classList.remove('hidden');
-            toolOutput.textContent = 'Loading parsed history…';
-            try {
-                const u =
-                    CONFIG.API_URL +
-                    '/api/helius/enhanced/addresses/' +
-                    encodeURIComponent(publicKey) +
-                    '/transactions?wallet=' +
-                    encodeURIComponent(publicKey) +
-                    '&limit=25';
-                const r = await fetch(u, { signal: abortAfter(60000), headers: authHeaders() });
-                const text = await r.text();
-                if (r.status === 401) {
-                    onHolderToolsUnauthorized();
-                    toolOutput.textContent = 'Password required — unlock holder tools.';
-                    return;
-                }
-                let json;
-                try {
-                    json = JSON.parse(text);
-                } catch (_) {
-                    toolOutput.textContent = text;
-                    return;
-                }
-                toolOutput.textContent = JSON.stringify(json, null, 2);
-            } catch (e) {
-                toolOutput.textContent = String(e);
-            }
-        });
 
         if (btnGateUnlock && gatePassword && gateStatus) {
             async function tryGateUnlock() {
