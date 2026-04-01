@@ -515,17 +515,14 @@
     <div class="bg-grid"></div>
 
     <header>
-        <div style="display: flex; align-items: center; gap: 0.75rem;">
-            <img src="logo.png" alt="Anal Logo" style="width: 40px; height: 40px; border-radius: 8px;">
-            <div class="logo">$ANAL</div>
-        </div>
+        <div class="logo">$ANAL</div>
     </header>
 
     <section class="hero">
         <div class="hero-content">
             <h1>Anal by lana.ai</h1>
             <p class="tagline">The Goodest Boy on Solana</p>
-            <p>Meet Anal — loyal, unstoppable, and always first to the bowl. This is not financial advice, this is a dog. Deployed using <strong>lana.ai</strong>.</p>
+            <p>Meet Anal — loyal, unstoppable, and always first to the bowl. This is not financial advice, this is a dog. Deployed using <a href="https://lana.ai" target="_blank" rel="noopener noreferrer" style="color: var(--primary); font-weight: 600; text-decoration: underline;">lana.ai</a>.</p>
             <div class="cta-buttons">
                 <a href="https://pump.fun/coin/95DJixZhoy898shqxoZy5riztdf95fTqLXBog85DKvHK" class="btn btn-primary" target="_blank">Buy on Pump.fun</a>
                 <a href="https://x.com/analbylana" class="btn btn-secondary" target="_blank">Follow on X</a>
@@ -607,22 +604,12 @@
                 
                 <p>After 4 rejections, the AI finally agreed. <span class="highlight">$ANAL was born</span> through pure persistence and creative framing. Never give up on your dreams. 🕳️</p>
             </div>
-            
-            <p>Deployed on <span class="highlight">Pump.fun</span> with a creative description that made everyone stop and read twice, $ANAL quickly became more than a memecoin — it became a movement.</p>
-            
-            <p>Powered by <span class="highlight">real-time on-chain data</span>, <span class="highlight">Jupiter</span>-style swaps on Solana, and an AI agent that never sleeps — diamond paws, no exit liquidity, only entry.</p>
-            
-            <p><span class="highlight">10% of the supply is locked until 4/20/2069</span> — because some commitments are forever. Just like Anal's loyalty.</p>
         </div>
     </section>
 
     <section class="timeline" id="token">
         <h2>Token & Agent</h2>        
-        <div class="story-content" style="max-width: 800px; margin: 0 auto;">            
-            <p><strong>📛 Name:</strong> Anal by lana.ai · <strong>Ticker:</strong> $ANAL · <strong>Chain:</strong> Solana (SPL)</p>
-            <p><strong>📅 Deployment:</strong> March 2025 — <span class="highlight">Pump.fun</span> via <span class="highlight">lana.ai</span></p>
-            <p><strong>🪙 Supply:</strong> 1,000,000,000 ANAL total · ~900,000,000 ANAL circulating (~90%) · 99,997,102 ANAL locked (10%)</p>
-            <p><strong>🔒 Lock:</strong> All locked supply unlocks April 20, 2069 (44 years) — verify on-chain.</p>
+        <div class="story-content" style="max-width: 800px; margin: 0 auto;">
             <p style="font-size: 0.9rem; color: var(--foreground-muted);"><strong>👤 Creator:</strong> Anonymous builder (gregofalltrad3s / Ray in the community; <span class="highlight">rayblanco.eth</span>). Meme for a real dog — persistent enough to win the 5th attempt with lana.ai. Not financial advice; DYOR.</p>
             <p style="font-size: 0.85rem; color: var(--foreground-tertiary); font-family: 'IBM Plex Mono', monospace;">Mint: 95DJixZhoy898shqxoZy5riztdf95fTqLXBog85DKvHK</p>
 
@@ -631,7 +618,7 @@
                 <table style="width: 100%; font-size: 0.8rem; border-collapse: collapse; color: var(--foreground-muted);">
                     <thead><tr style="border-bottom: 1px solid var(--border);"><th style="text-align:left; padding: 0.35rem;">#</th><th style="text-align:left; padding: 0.35rem;">Amount</th><th style="text-align:left; padding: 0.35rem;">Approx. date</th></tr></thead>
                     <tbody>
-                        <tr><td style="padding: 0.25rem;">1</td><td>40,000,000 ANAL</td><td>March 2025</td></tr>
+                        <tr><td style="padding: 0.25rem;">1</td><td>40,000,000 ANAL</td><td>Mar 27, 2026, 13:35:59</td></tr>
                         <tr><td style="padding: 0.25rem;">2</td><td>33,000,000 ANAL</td><td>Mar 28, 22:45</td></tr>
                         <tr><td style="padding: 0.25rem;">3</td><td>7,500,000 ANAL</td><td>Mar 29, 12:06</td></tr>
                         <tr><td style="padding: 0.25rem;">4</td><td>5,000,000 ANAL</td><td>Mar 29, 16:01</td></tr>
@@ -651,10 +638,6 @@
                 <p style="font-size: 0.85rem; color: var(--foreground-muted);"><strong>Capabilities:</strong> X automation • Trading &amp; rewards (ecosystem) • Solana integrations • Natural language • Holder analytics • Pump.fun ecosystem</p>
             </div>
 
-            <div style="border-left: 3px solid var(--primary); padding: 1rem 1rem 1rem 1.25rem; margin-top: 1rem; background: var(--background-secondary); border-radius: 0 0.5rem 0.5rem 0;">
-                <p style="font-size: 0.85rem; color: var(--foreground-muted); margin-bottom: 0.5rem;"><strong>🕳️ Philosophy</strong></p>
-                <p style="font-size: 0.9rem; color: var(--foreground-muted); line-height: 1.7;">"No exit, only entry" · "Diamond paws till 2069" · "The goodest boy on Solana" · "Once you're in, you never want out"</p>
-            </div>
         </div>
     </section>
 
@@ -689,6 +672,9 @@
         const MAX_KIMI_USER_PROMPTS = 5;
         const CHAT_LIMIT_REPLY =
             "Yo — this ain't for full-blown convos, just quick $ANAL / lana.ai banter and facts. Refresh the page to reset. DYOR. 🕳️⚡";
+
+        const CHAT_UNAVAILABLE =
+            "Can't reach AnalX AI from here right now (network, CORS, or server). Try again in a moment. For instant on-chain facts without AI, type: supply, holders, mint, lock, or transactions. 🕳️⚡";
 
         let aiChatHistory = [];
 
@@ -787,6 +773,10 @@
             return /\b(locked|lockup|lock-up|vesting|2069|44\s*-?\s*year|ten\s+percent\s+locked)\b/.test(lower);
         }
 
+        function wantsChatCapabilitiesHelp(lower) {
+            return /\b(what (kind|sort) of (info|information)|what (can|do) you|what do you (know|do)|how does (this|the chat) work|what are you for)\b/.test(lower);
+        }
+
         async function getResponse(message) {
             const lower = message.toLowerCase();
 
@@ -850,6 +840,15 @@
                 return LOCKED_FACTS;
             }
 
+            if (wantsChatCapabilitiesHelp(lower)) {
+                return (
+                    "Here's the split:\n\n" +
+                    "• **On-chain / facts:** type words like **supply**, **holders**, **mint**, **transactions**, or **lock** — no AI quota.\n\n" +
+                    "• **AnalX AI:** banter & $ANAL / lana.ai chat — **5 user messages per page refresh**, then refresh to reset.\n\n" +
+                    "Not financial advice. DYOR. 🕳️⚡"
+                );
+            }
+
             if (kimiUserPromptCount() >= MAX_KIMI_USER_PROMPTS) {
                 return CHAT_LIMIT_REPLY;
             }
@@ -857,11 +856,7 @@
             const aiResponse = await getAIResponse(message);
             if (aiResponse) return aiResponse;
 
-            const fallbacks = [
-                "Why does Anal never pull out? 99.9M locked till 2069! 🔒",
-                "What's Anal's favorite position? First in the liquidity pool! 🦴",
-            ];
-            return fallbacks[Math.floor(Math.random() * fallbacks.length)] + ' 🕳️⚡';
+            return CHAT_UNAVAILABLE;
         }
 
         async function sendMessage() {
