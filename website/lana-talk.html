@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Helius chat — $ANAL holder tools | Anal by lana.ai</title>
+    <title>Anal chat — $ANAL holder tools | Anal by lana.ai</title>
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Serif:wght@400;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -101,30 +101,6 @@
         .links a { color: var(--primary); font-weight: 600; }
         .fine { font-size: 0.8rem; color: var(--foreground-tertiary); margin-top: 1rem; }
         .chat-input-row { display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; }
-        #rpc-params {
-            width: 100%;
-            min-height: 100px;
-            background: #0a100e;
-            border: 1px solid var(--border);
-            border-radius: 0.5rem;
-            padding: 0.75rem;
-            color: var(--foreground-muted);
-            font-family: 'IBM Plex Mono', monospace;
-            font-size: 0.8rem;
-            margin-bottom: 0.75rem;
-            resize: vertical;
-        }
-        #rpc-method {
-            width: 100%;
-            max-width: 100%;
-            margin-bottom: 0.5rem;
-            padding: 0.5rem;
-            background: var(--background-secondary);
-            border: 1px solid var(--border);
-            color: var(--foreground);
-            border-radius: 0.5rem;
-            font-family: inherit;
-        }
         .holder-strip p { margin: 0.2rem 0; font-size: 0.9rem; }
         .chat-card h2 { margin-bottom: 0.35rem; }
         .chat-messages {
@@ -166,12 +142,6 @@
             color: var(--foreground-muted);
             max-height: 360px;
             overflow-y: auto;
-        }
-        .chat-msg-assistant .chat-label {
-            font-size: 0.72rem;
-            color: var(--primary);
-            margin-bottom: 0.35rem;
-            font-weight: 600;
         }
         .chat-msg-system {
             font-size: 0.82rem;
@@ -257,18 +227,6 @@
             font-family: inherit;
             font-size: 0.9rem;
         }
-        details.advanced-rpc {
-            margin-top: 1rem;
-            padding-top: 1rem;
-            border-top: 1px solid var(--border);
-        }
-        details.advanced-rpc summary {
-            cursor: pointer;
-            color: var(--foreground-muted);
-            font-size: 0.88rem;
-            font-weight: 600;
-        }
-        details.advanced-rpc summary:hover { color: var(--primary); }
         .chat-msg-assistant .md-content {
             font-size: 0.88rem;
             line-height: 1.55;
@@ -304,15 +262,6 @@
             margin: 0.5rem 0;
         }
         .chat-typing { color: var(--foreground-tertiary); font-size: 0.9rem; padding: 0.35rem 0; }
-        .site-chat-footer {
-            text-align: center;
-            font-size: 0.78rem;
-            color: var(--foreground-tertiary);
-            margin: 2rem auto 0;
-            padding: 0 5% 2.5rem;
-            max-width: 720px;
-            line-height: 1.5;
-        }
     </style>
 </head>
 <body>
@@ -322,17 +271,17 @@
         <nav aria-label="Site">
             <a href="index.html#story">Story</a>
             <a href="index.html#token">Token</a>
-            <a href="lana-talk.html" aria-current="page">Helius chat</a>
+            <a href="lana-talk.html" aria-current="page">Anal chat</a>
         </nav>
     </header>
     <main>
-        <h1>Helius chat</h1>
+        <h1>Anal chat</h1>
         <p class="lede">
             For verified <strong>$ANAL</strong> holders (mint
             <span style="font-family:'IBM Plex Mono',monospace;font-size:0.85rem;">95DJix…85DKvHK</span>,
-            <strong>≥42,069</strong> ANAL). Chat runs on the server: the <strong>AI</strong> reads live
-            <a class="links" href="https://www.helius.dev/docs" target="_blank" rel="noopener noreferrer">Helius</a>
-            wallet data (and optional <strong>Jupiter</strong> trending when you ask). Use it for wallet analysis, market movers, and on-chain context — not for signing transactions.
+            <strong>≥42,069</strong> ANAL).
+            <strong>Anal chat</strong> is powered by
+            <a class="links" href="https://www.helius.dev/docs" target="_blank" rel="noopener noreferrer">Helius</a>.
             <a class="links" href="index.html#token">Token &amp; lock</a>. DYOR.
         </p>
 
@@ -375,8 +324,7 @@
                 <details class="research-panel" open>
                     <summary>Quick research</summary>
                     <p class="research-hint">
-                        Optional: paste a <strong>wallet</strong> or <code style="font-size:0.75em;">solscan.io/account/…</code> link, and/or a <strong>token mint</strong>, then tap a button. The server pulls live Helius (and Jupiter when relevant) context and the <strong>AI</strong> returns a <strong>plain-language</strong> reply in the chat below — same as typing a question. Not the same product as
-                        <a href="https://www.kimi.com/code/docs/en/more/third-party-agents.html" target="_blank" rel="noopener noreferrer" class="links">Kimi Code</a> in your IDE (different API path).
+                        Paste a <strong>wallet</strong> or Solscan link, and/or a <strong>token mint</strong>, then tap an action — or type any question below.
                     </p>
                     <div class="research-fields">
                         <div>
@@ -407,24 +355,9 @@
                     <input type="text" id="chat-input" placeholder="Reply…" autocomplete="off" />
                     <button type="button" class="btn" id="chat-send">Send</button>
                 </div>
-                <details class="advanced-rpc">
-                    <summary>Advanced: custom JSON-RPC</summary>
-                    <p style="font-size:0.8rem;color:var(--foreground-muted);margin:0.75rem 0;">
-                        Read-only methods only. <a class="links" href="https://www.helius.dev/docs/api-reference/rpc/http-methods" target="_blank" rel="noopener noreferrer">RPC reference</a>.
-                    </p>
-                    <label class="fine" for="rpc-method">Method</label>
-                    <select id="rpc-method" aria-label="RPC method"></select>
-                    <label class="fine" for="rpc-params" style="display:block;margin-top:0.75rem;">Params (JSON)</label>
-                    <textarea id="rpc-params" spellcheck="false" aria-label="RPC params JSON">[]</textarea>
-                    <button type="button" class="btn" id="btn-rpc-run" style="margin-top:0.75rem;">Run RPC</button>
-                </details>
             </div>
         </div>
     </main>
-    <footer class="site-chat-footer">
-        Helius chat can make mistakes. Double-check important numbers on explorers. Not financial advice.
-        <a href="https://www.helius.dev/docs" target="_blank" rel="noopener noreferrer" class="links" style="color:var(--primary);">Helius docs</a>
-    </footer>
     <script src="https://cdn.jsdelivr.net/npm/marked@12.0.0/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.8/dist/purify.min.js"></script>
     <script>
@@ -518,9 +451,6 @@
         const chatMessages = document.getElementById('chat-messages');
         const chatInput = document.getElementById('chat-input');
         const chatSend = document.getElementById('chat-send');
-        const rpcMethod = document.getElementById('rpc-method');
-        const rpcParams = document.getElementById('rpc-params');
-        const btnRpcRun = document.getElementById('btn-rpc-run');
         const btnGateUnlock = document.getElementById('btn-gate-unlock');
         const gatePassword = document.getElementById('gate-password');
         const gateStatus = document.getElementById('gate-status');
@@ -566,24 +496,6 @@
             chatScroll();
         }
 
-        function appendRpcJson(label, payload) {
-            if (!chatMessages) return;
-            const wrap = document.createElement('div');
-            wrap.className = 'chat-msg chat-msg-assistant';
-            if (label) {
-                const lab = document.createElement('div');
-                lab.className = 'chat-label';
-                lab.textContent = label;
-                wrap.appendChild(lab);
-            }
-            const pre = document.createElement('pre');
-            pre.textContent =
-                typeof payload === 'string' ? payload : JSON.stringify(payload, null, 2);
-            wrap.appendChild(pre);
-            chatMessages.appendChild(wrap);
-            chatScroll();
-        }
-
         function showTyping() {
             if (!chatMessages) return;
             hideTyping();
@@ -617,28 +529,6 @@
             const c = new AbortController();
             setTimeout(function () { c.abort(); }, ms);
             return c.signal;
-        }
-
-        async function loadRpcMethodOptions() {
-            rpcMethod.innerHTML = '';
-            try {
-                const r = await fetch(CONFIG.API_URL + '/api/helius/allowed-methods', {
-                    headers: authHeaders(),
-                });
-                if (r.status === 401) {
-                    onHolderToolsUnauthorized();
-                    return;
-                }
-                const list = await r.json();
-                if (!Array.isArray(list)) return;
-                list.forEach(function (m) {
-                    const opt = document.createElement('option');
-                    opt.value = m;
-                    opt.textContent = m;
-                    rpcMethod.appendChild(opt);
-                });
-                rpcMethod.value = 'getBalance';
-            } catch (_) {}
         }
 
         function getProvider() {
@@ -751,13 +641,11 @@
                 ' ANAL.';
             tierLine.textContent = 'Tier ' + (data.tier || '?') + ' · min 42,069 ANAL';
             walletLine.textContent = 'Wallet: ' + publicKey;
-            rpcParams.value = JSON.stringify([publicKey], null, 2);
-            loadRpcMethodOptions();
             if (chatMessages) {
                 chatMessages.innerHTML = '';
                 aiHistory = [];
                 appendAssistantMarkdown(
-                    '**Wallet connected.** Ask about **trending tokens**, **your holdings**, DeFi-style positions visible in your wallet data, or anything Solana. Replies use the server **AI** with live **Helius** context (and **Jupiter** trending when you ask about 24h movers).'
+                    '**Wallet connected.** Ask about **trending tokens**, **holdings**, or anything Solana. **Anal chat** uses **Helius** on-chain context (and **Jupiter** 24h data when the server has a Jupiter key).'
                 );
             }
             panelTools.classList.remove('hidden');
@@ -847,50 +735,6 @@
             connectStatus.textContent = '';
             if (chatMessages) chatMessages.innerHTML = '';
             aiHistory = [];
-            rpcParams.value = '[]';
-        });
-
-        btnRpcRun.addEventListener('click', async function () {
-            if (!publicKey) return;
-            let paramsParsed;
-            try {
-                paramsParsed = JSON.parse(rpcParams.value);
-            } catch (e) {
-                appendRpcJson('Error', 'Invalid JSON in Params: ' + (e.message || String(e)));
-                return;
-            }
-            const method = rpcMethod.value;
-            const preview =
-                'RPC · ' + method + ' ' + rpcParams.value.slice(0, 160) + (rpcParams.value.length > 160 ? '…' : '');
-            appendUser(preview);
-            try {
-                const r = await fetch(CONFIG.API_URL + '/api/helius/rpc', {
-                    method: 'POST',
-                    headers: authHeaders({ 'Content-Type': 'application/json' }),
-                    body: JSON.stringify({
-                        wallet: publicKey,
-                        method: method,
-                        params: paramsParsed,
-                    }),
-                    signal: abortAfter(60000),
-                });
-                const text = await r.text();
-                if (r.status === 401) {
-                    onHolderToolsUnauthorized();
-                    appendRpcJson('Error', 'Password required — unlock holder tools.');
-                    return;
-                }
-                let json;
-                try {
-                    json = JSON.parse(text);
-                } catch (_) {
-                    appendRpcJson(method, text);
-                    return;
-                }
-                appendRpcJson(method, json);
-            } catch (e) {
-                appendRpcJson('Error', String(e));
-            }
         });
 
         function runResearchAction(kind) {

@@ -4,7 +4,7 @@ Monorepo for **$ANAL** / **Anal by lana.ai**: static site plus **one backend** (
 
 | Directory | Role |
 |-----------|------|
-| `website/` | **`lana-talk.html`** — wallet connect; ≥42,069 ANAL unlocks **read-only Helius JSON-RPC** UI + quick queries (no Kimi). |
+| `website/` | **`lana-talk.html`** — wallet connect; ≥42,069 ANAL unlocks **Anal chat** (Helius-backed) + quick research actions. |
 | `api/` | Express: **`POST /api/helius/rpc`**, **[Enhanced Transactions](https://www.helius.dev/docs/api-reference/enhanced-transactions/overview)** proxies (`/api/helius/enhanced/...`, holder gate), `POST /api/chat` (Kimi, home page). |
 | `helius-proxy/`, `ai-agent/` | Legacy split (optional reference); behavior lives in `api/`. |
 
