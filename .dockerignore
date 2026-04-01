@@ -1,0 +1,8 @@
+.git
+.github
+**/.git
+**/node_modules
+website
+*.md
+.env
+.env.*

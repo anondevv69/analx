@@ -27,18 +27,30 @@ Monorepo for **$ANAL** / **Anal by lana.ai**: static site, Helius proxy (on-chai
 
 ## Railway (this repo)
 
-Two **services** from the same GitHub repo (deploy each folder with **Railway CLI** `railway up` from `helius-proxy/` and `ai-agent/`, or set **Root Directory** in the dashboard).
+The repo root is a **monorepo** (no root `package.json`). Railway’s **Railpack** builder cannot infer a single app from `./` alone — use the **root `Dockerfile`** (see `railway.json`).
 
-| Service (example name) | Folder | Required variables |
-|--------------------------|--------|---------------------|
-| Helius proxy | `helius-proxy/` | `HELIUS_API_KEY` |
-| AnalX chat | `ai-agent/` | `KIMI_API_KEY` |
+### Option A — Root Dockerfile (recommended for GitHub deploys from repo root)
 
-After first deploy, open **Railway → project → each service → Variables**, add the keys, and **Redeploy** (or let Railway redeploy on save). `PORT` is set automatically.
+1. Create **two services** in one Railway project, both connected to this GitHub repo (root path `/`).
+2. For **each** service, open **Variables** and add:
+   - **AnalX (chat):** `SERVICE` = `ai-agent` and `KIMI_API_KEY` = your key  
+   - **Helius proxy:** `SERVICE` = `helius-proxy` and `HELIUS_API_KEY` = your key  
 
-Optional on both: `ALLOWED_ORIGINS` — comma-separated origins for your live site (e.g. `https://YOURNAME.github.io,https://yourdomain.xyz`).
+   Railway passes `SERVICE` into the Docker build so the correct folder is copied. If you omit `SERVICE`, the image defaults to **`ai-agent`**.
 
-Then set `CONFIG.AI_URL` and `CONFIG.HELIUS_URL` in `website/index.html` to your two `*.up.railway.app` URLs and redeploy GitHub Pages if needed.
+3. Redeploy after saving variables. `PORT` is set by Railway; the apps listen on `process.env.PORT`.
+
+Optional on both: `ALLOWED_ORIGINS` — comma-separated origins for your live site.
+
+### Option B — Subdirectory (no root `Dockerfile` needed)
+
+In **Settings → Source → Root Directory**, set **`ai-agent`** or **`helius-proxy`**. Then Railpack/Nixpacks sees `package.json` in that folder. Use the small `Dockerfile` inside each folder if you prefer Docker.
+
+### Secrets
+
+Add `HELIUS_API_KEY` / `KIMI_API_KEY` only in Railway **Variables**, never in the repo.
+
+Then set `CONFIG.AI_URL` and `CONFIG.HELIUS_URL` in `website/index.html` to your two `*.up.railway.app` URLs.
 
 ## Repository
 
