@@ -4,7 +4,7 @@ Monorepo for **$ANAL** / **Anal by lana.ai**: static site plus **one backend** (
 
 | Directory | Role |
 |-----------|------|
-| `website/` | Static site (GitHub Pages, etc.). **`lana-talk.html`** — connect Phantom, verify $ANAL via Helius, unlock holder data tools. |
+| `website/` | Static site. **`lana-talk.html`** — wallet connect; Helius verifies ANAL (≥42,069 for access; tiered Kimi prompts). |
 | `api/` | **Production backend** — Express app: Helius proxy routes + `POST /api/chat` (Kimi). Deploy this to Railway. |
 | `helius-proxy/`, `ai-agent/` | Legacy split (optional reference); behavior lives in `api/`. |
 
@@ -14,7 +14,7 @@ Monorepo for **$ANAL** / **Anal by lana.ai**: static site plus **one backend** (
 2. **Variables** (same service):
    - `HELIUS_API_KEY` — required  
    - `KIMI_API_KEY` — required  
-   - Optional: `TOKEN_MINT`, `KIMI_TEMPERATURE`, `ALLOWED_ORIGINS`, `MAX_USER_CHAT_PROMPTS` (default `5`), `CHAT_LIMIT_MESSAGE` (custom text when the limit is hit). For `ALLOWED_ORIGINS`, use comma-separated origins (you can use newlines). Listing `https://yourdomain.com` also allows `http://` for that host, and `www` vs apex (e.g. `www.analbylana.xyz` vs `analbylana.xyz`). Add `https://anondevv69.github.io` if you test from the GitHub Pages URL. If unset, all origins are allowed (dev only).
+   - Optional: `TOKEN_MINT`, `KIMI_TEMPERATURE`, `ALLOWED_ORIGINS`, `MAX_USER_CHAT_PROMPTS` (default `5` for **no** `wallet` on `/api/chat`), `CHAT_LIMIT_MESSAGE`. **Holder chat** (body includes `wallet`): Helius checks ANAL balance — default **≥ 42,069** ANAL → **10** prompts; **> 1,000,000** ANAL → **20** prompts. Tune with `ANAL_TIER1_MIN_UI`, `ANAL_TIER2_BOUND_UI` (tier 1 is up to this amount inclusive; above → tier 2), `ANAL_TIER1_PROMPTS`, `ANAL_TIER2_PROMPTS`. For `ALLOWED_ORIGINS`, use comma-separated origins (newlines OK). Add `https://anondevv69.github.io` for GitHub Pages testing. If unset, all origins are allowed (dev only).
 3. Deploy. Copy the public `*.up.railway.app` URL into `website/index.html` as **`CONFIG.API_URL`** (one URL for both chat and on-chain helpers).
 
 No `SERVICE` build arg — removed.

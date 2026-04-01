@@ -28,6 +28,37 @@ const MAX_USER_CHAT_PROMPTS = Math.min(
     Math.max(1, parseInt(process.env.MAX_USER_CHAT_PROMPTS || '5', 10) || 5)
 );
 
+/** Wallet chat (when `wallet` sent on POST /api/chat): min ANAL balance (whole tokens, UI) for any prompts */
+const ANAL_TIER1_MIN_UI = Math.max(0, parseInt(process.env.ANAL_TIER1_MIN_UI || '42069', 10) || 42069);
+/** Balances above this (whole tokens) get tier-2 prompt allowance */
+const ANAL_TIER2_BOUND_UI = Math.max(
+    ANAL_TIER1_MIN_UI,
+    parseInt(process.env.ANAL_TIER2_BOUND_UI || '1000000', 10) || 1000000
+);
+const ANAL_TIER1_PROMPTS = Math.min(100, Math.max(1, parseInt(process.env.ANAL_TIER1_PROMPTS || '10', 10) || 10));
+const ANAL_TIER2_PROMPTS = Math.min(100, Math.max(1, parseInt(process.env.ANAL_TIER2_PROMPTS || '20', 10) || 20));
+
+function promptTierFromRawAmount(amountRawStr, decimals) {
+    let raw;
+    try {
+        raw = BigInt(String(amountRawStr || '0'));
+    } catch (_) {
+        return { promptLimit: 0, tier: 0, eligible: false };
+    }
+    const d = Number(decimals);
+    const dec = Number.isFinite(d) && d >= 0 && d <= 18 ? Math.floor(d) : 9;
+    const mult = BigInt(10) ** BigInt(dec);
+    const tier1Min = BigInt(ANAL_TIER1_MIN_UI) * mult;
+    const bound = BigInt(ANAL_TIER2_BOUND_UI) * mult;
+    if (raw < tier1Min) {
+        return { promptLimit: 0, tier: 0, eligible: false };
+    }
+    if (raw <= bound) {
+        return { promptLimit: ANAL_TIER1_PROMPTS, tier: 1, eligible: true };
+    }
+    return { promptLimit: ANAL_TIER2_PROMPTS, tier: 2, eligible: true };
+}
+
 const CHAT_LIMIT_MESSAGE =
     process.env.CHAT_LIMIT_MESSAGE ||
     "Yo — this ain't for full-blown convos, just quick $ANAL / lana.ai banter and facts. Refresh the page if you need a clean slate. DYOR. 🕳️⚡";
@@ -103,6 +134,7 @@ async function fetchAnalHolderStatus(walletAddress) {
         }
     }
     const uiAmount = Number(total) / 10 ** decimals;
+    const tierInfo = promptTierFromRawAmount(total.toString(), decimals);
     return {
         address: walletAddress,
         mint: TOKEN_MINT,
@@ -110,6 +142,10 @@ async function fetchAnalHolderStatus(walletAddress) {
         amountRaw: total.toString(),
         uiAmount,
         decimals,
+        promptLimit: tierInfo.promptLimit,
+        tier: tierInfo.tier,
+        eligibleForChat: tierInfo.eligible,
+        minAnalForChatUi: ANAL_TIER1_MIN_UI,
     };
 }
 
@@ -262,7 +298,7 @@ app.get('/api/account/:address', async (req, res) => {
 
 app.post('/api/chat', async (req, res) => {
     try {
-        const { message, history } = req.body;
+        const { message, history, wallet } = req.body;
 
         if (!message || typeof message !== 'string') {
             return res.status(400).json({ error: 'Message required' });
@@ -275,10 +311,54 @@ app.post('/api/chat', async (req, res) => {
 
         const prior = normalizeHistory(history);
         const userTurnsInHistory = prior.filter((m) => m.role === 'user').length;
-        if (userTurnsInHistory >= MAX_USER_CHAT_PROMPTS) {
+
+        let maxPrompts = MAX_USER_CHAT_PROMPTS;
+        let limitKind = 'public';
+
+        if (wallet != null && String(wallet).trim() !== '') {
+            const w = String(wallet).trim();
+            if (w.length < 32 || w.length > 52) {
+                return res.status(400).json({ error: 'invalid_wallet' });
+            }
+            const status = await fetchAnalHolderStatus(w);
+            if (status.error) {
+                return res.status(502).json({ error: 'holder_check_failed', message: status.error });
+            }
+            maxPrompts = status.promptLimit;
+            limitKind = 'wallet';
+            if (maxPrompts === 0) {
+                return res.status(403).json({
+                    error: 'insufficient_anal',
+                    message:
+                        'Holder chat requires at least ' +
+                        ANAL_TIER1_MIN_UI.toLocaleString() +
+                        ' $ANAL. Tier: ' +
+                        ANAL_TIER1_MIN_UI.toLocaleString() +
+                        '–' +
+                        ANAL_TIER2_BOUND_UI.toLocaleString() +
+                        ' ANAL → ' +
+                        ANAL_TIER1_PROMPTS +
+                        ' prompts; above ' +
+                        ANAL_TIER2_BOUND_UI.toLocaleString() +
+                        ' ANAL → ' +
+                        ANAL_TIER2_PROMPTS +
+                        ' prompts.',
+                    minAnalForChatUi: ANAL_TIER1_MIN_UI,
+                });
+            }
+        }
+
+        if (userTurnsInHistory >= maxPrompts) {
             return res.status(429).json({
                 error: 'chat_limit',
-                message: CHAT_LIMIT_MESSAGE,
+                message:
+                    limitKind === 'wallet'
+                        ? 'Holder chat limit reached (' +
+                          maxPrompts +
+                          ' user messages this session for your balance tier). Refresh the page to reset. DYOR. 🕳️⚡'
+                        : CHAT_LIMIT_MESSAGE,
+                limit: maxPrompts,
+                limitKind,
             });
         }
 
@@ -304,6 +384,9 @@ app.post('/api/chat', async (req, res) => {
             res.json({
                 response: data.choices[0].message.content,
                 timestamp: new Date().toISOString(),
+                promptRemaining: Math.max(0, maxPrompts - userTurnsInHistory - 1),
+                promptLimit: maxPrompts,
+                limitKind,
             });
         } else {
             res.status(500).json({ error: 'Invalid AI response', details: data });

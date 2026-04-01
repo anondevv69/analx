@@ -114,6 +114,28 @@
         }
         .links a { color: var(--primary); font-weight: 600; }
         .fine { font-size: 0.8rem; color: var(--foreground-tertiary); margin-top: 1rem; }
+        #chat-messages {
+            background: var(--background-secondary);
+            border-radius: 0.5rem;
+            padding: 1rem;
+            min-height: 140px;
+            max-height: 280px;
+            overflow-y: auto;
+            margin-bottom: 0.75rem;
+            font-size: 0.88rem;
+        }
+        .chat-row { margin-bottom: 0.65rem; white-space: pre-wrap; }
+        .chat-input-row { display: flex; gap: 0.5rem; }
+        #chat-input {
+            flex: 1;
+            background: var(--background-secondary);
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            padding: 0.65rem 0.85rem;
+            color: var(--foreground);
+            font-family: inherit;
+            outline: none;
+        }
     </style>
 </head>
 <body>
@@ -130,9 +152,10 @@
     <main>
         <h1>Lana.ai talk</h1>
         <p class="lede">
-            Connect a Solana wallet. We use Helius to check that you hold <strong>$ANAL</strong>
-            (<span style="font-family:'IBM Plex Mono',monospace;font-size:0.85rem;">95DJix…85DKvHK</span>).
-            Unlocks read-only data tools for research — same Helius-backed routes as the main site, in one place.
+            Connect a Solana wallet. <strong>Helius</strong> verifies your <strong>$ANAL</strong> balance for mint
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:0.85rem;">95DJix…85DKvHK</span>.
+            You need <strong>at least 42,069</strong> ANAL to use holder tools and chat here.
+            <strong>42,069–1,000,000</strong> ANAL → <strong>10</strong> AI prompts per refresh; <strong>over 1,000,000</strong> ANAL → <strong>20</strong> prompts.
             DYOR; not financial advice.
         </p>
 
@@ -156,7 +179,17 @@
             <div class="card">
                 <h2>Holder verified</h2>
                 <p class="status ok" id="holder-line"></p>
+                <p class="fine" id="tier-line"></p>
                 <p class="fine" id="wallet-line"></p>
+            </div>
+            <div class="card" id="panel-chat">
+                <h2>AnalX chat (Kimi)</h2>
+                <p class="fine" id="prompt-budget" style="margin-bottom:0.75rem;"></p>
+                <div id="chat-messages"></div>
+                <div class="chat-input-row">
+                    <input type="text" id="chat-input" placeholder="Ask about Solana, $ANAL, or lana.ai…" autocomplete="off" />
+                    <button type="button" class="btn" id="chat-send">Send</button>
+                </div>
             </div>
             <div class="card">
                 <h2>Helius data (read-only)</h2>
@@ -193,10 +226,41 @@
         const deniedText = document.getElementById('denied-text');
         const panelTools = document.getElementById('panel-tools');
         const holderLine = document.getElementById('holder-line');
+        const tierLine = document.getElementById('tier-line');
         const walletLine = document.getElementById('wallet-line');
+        const promptBudget = document.getElementById('prompt-budget');
         const toolOutput = document.getElementById('tool-output');
+        const chatMessages = document.getElementById('chat-messages');
+        const chatInput = document.getElementById('chat-input');
+        const chatSend = document.getElementById('chat-send');
 
         let publicKey = null;
+        let aiChatHistory = [];
+
+        function abortAfter(ms) {
+            if (typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function') {
+                return AbortSignal.timeout(ms);
+            }
+            const c = new AbortController();
+            setTimeout(function () { c.abort(); }, ms);
+            return c.signal;
+        }
+
+        function addChatLine(who, text, isUser) {
+            const div = document.createElement('div');
+            div.className = 'chat-row';
+            const s = document.createElement('span');
+            s.style.color = isUser ? 'var(--foreground)' : 'var(--primary)';
+            s.style.fontWeight = '600';
+            s.textContent = who + ':';
+            const t = document.createElement('span');
+            t.style.color = 'var(--foreground-muted)';
+            t.textContent = ' ' + text;
+            div.appendChild(s);
+            div.appendChild(t);
+            chatMessages.appendChild(div);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
 
         function getProvider() {
             return window.solana || window.phantom?.solana;
@@ -269,9 +333,37 @@
                 return;
             }
 
+            if (!data.eligibleForChat) {
+                panelDenied.classList.remove('hidden');
+                deniedText.textContent =
+                    'You hold $ANAL but need at least ' +
+                    (data.minAnalForChatUi != null ? Number(data.minAnalForChatUi).toLocaleString() : '42,069') +
+                    ' ANAL to unlock holder tools and chat on this page.';
+                btnConnect.classList.remove('hidden');
+                btnDisconnect.classList.add('hidden');
+                return;
+            }
+
             holderLine.textContent =
-                'Verified: ~' + (data.uiAmount != null ? Number(data.uiAmount).toLocaleString(undefined, { maximumFractionDigits: 4 }) : '?') + ' ANAL (raw ' + data.amountRaw + ').';
+                'Balance: ~' +
+                (data.uiAmount != null ? Number(data.uiAmount).toLocaleString(undefined, { maximumFractionDigits: 4 }) : '?') +
+                ' ANAL.';
+            tierLine.textContent =
+                'Tier ' +
+                (data.tier || '?') +
+                ': ' +
+                (data.promptLimit || 0) +
+                ' AI prompts per page refresh (balance checked via Helius).';
             walletLine.textContent = 'Wallet: ' + publicKey;
+            promptBudget.textContent =
+                'Prompts remaining this refresh: ' + (data.promptLimit != null ? data.promptLimit : '—') + ' (sends with your wallet for server-side limits).';
+            aiChatHistory = [];
+            chatMessages.innerHTML = '';
+            addChatLine(
+                'AnalX',
+                "Woof — you're verified. Ask about Solana, $ANAL, or lana.ai. DYOR. 🕳️⚡",
+                false
+            );
             panelTools.classList.remove('hidden');
         }
 
@@ -292,6 +384,76 @@
             connectStatus.textContent = '';
             toolOutput.classList.add('hidden');
             toolOutput.textContent = '';
+            aiChatHistory = [];
+            chatMessages.innerHTML = '';
+            chatInput.value = '';
+        });
+
+        async function sendChat() {
+            const msg = chatInput.value.trim();
+            if (!msg || !publicKey) return;
+            addChatLine('You', msg, true);
+            chatInput.value = '';
+            chatSend.disabled = true;
+            chatInput.disabled = true;
+            const typing = document.createElement('div');
+            typing.className = 'chat-row chat-typing';
+            typing.innerHTML =
+                '<span style="color:var(--primary);font-weight:600;">AnalX:</span> <span style="color:var(--foreground-muted);">Typing…</span>';
+            chatMessages.appendChild(typing);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+            try {
+                const r = await fetch(CONFIG.API_URL + '/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: msg, history: aiChatHistory, wallet: publicKey }),
+                    signal: abortAfter(60000),
+                });
+                typing.remove();
+                const text = await r.text();
+                let json;
+                try {
+                    json = JSON.parse(text);
+                } catch (_) {
+                    addChatLine('AnalX', 'Bad response from server.', false);
+                    return;
+                }
+                if (r.status === 403 && json.error === 'insufficient_anal') {
+                    addChatLine('AnalX', json.message || 'Insufficient ANAL for holder chat.', false);
+                    return;
+                }
+                if (r.status === 429) {
+                    addChatLine('AnalX', json.message || 'Limit reached.', false);
+                    return;
+                }
+                if (!r.ok) {
+                    addChatLine('AnalX', json.error || json.message || 'Request failed.', false);
+                    return;
+                }
+                if (json.response) {
+                    aiChatHistory.push({ role: 'user', content: msg });
+                    aiChatHistory.push({ role: 'assistant', content: json.response });
+                    if (aiChatHistory.length > 10) aiChatHistory = aiChatHistory.slice(-10);
+                    addChatLine('AnalX', json.response, false);
+                    if (json.promptRemaining != null && json.promptLimit != null) {
+                        promptBudget.textContent =
+                            'Prompts remaining this refresh: ' + json.promptRemaining + ' / ' + json.promptLimit;
+                    }
+                }
+            } catch (e) {
+                const ty = chatMessages.querySelector('.chat-typing');
+                if (ty) ty.remove();
+                console.error(e);
+                addChatLine('AnalX', 'Network error. Try again.', false);
+            } finally {
+                chatSend.disabled = false;
+                chatInput.disabled = false;
+            }
+        }
+
+        chatSend.addEventListener('click', sendChat);
+        chatInput.addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') sendChat();
         });
 
         document.querySelectorAll('.tool-btn[data-endpoint]').forEach(function (btn) {
