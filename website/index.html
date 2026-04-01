@@ -93,6 +93,15 @@
             letter-spacing: -0.02em;
         }
 
+        .logo a {
+            color: inherit;
+            text-decoration: none;
+        }
+
+        .logo a:hover {
+            color: var(--primary-dark);
+        }
+
         nav {
             display: flex;
             gap: 2rem;
@@ -479,8 +488,19 @@
             line-height: 1.6;
         }
 
+        #chat-input:disabled,
+        #chat-send:disabled {
+            opacity: 0.65;
+            cursor: not-allowed;
+        }
+
         /* Responsive */
         @media (max-width: 768px) {
+            header {
+                flex-wrap: wrap;
+                gap: 0.5rem;
+            }
+
             .timeline-container::before {
                 left: 20px;
             }
@@ -497,7 +517,14 @@
             }
 
             nav {
-                display: none;
+                gap: 0.75rem 1rem;
+                flex-wrap: wrap;
+                justify-content: flex-end;
+                max-width: 65%;
+            }
+
+            nav a {
+                font-size: 0.8rem;
             }
 
             .hero {
@@ -515,7 +542,12 @@
     <div class="bg-grid"></div>
 
     <header>
-        <div class="logo">$ANAL</div>
+        <div class="logo"><a href="#">$ANAL</a></div>
+        <nav aria-label="Page sections">
+            <a href="#story">Story</a>
+            <a href="#token">Token</a>
+            <a href="#chat">Chat</a>
+        </nav>
     </header>
 
     <section class="hero">
@@ -657,13 +689,28 @@
             
             <div style="display: flex; gap: 0.5rem;">
                 <input type="text" id="chat-input" placeholder="Type your message..." style="flex: 1; background: var(--background-secondary); border: 1px solid var(--border); border-radius: 0.5rem; padding: 0.75rem 1rem; color: var(--foreground); font-family: inherit; outline: none;">
-                <button onclick="sendMessage()" style="background: var(--primary); color: var(--background); border: none; border-radius: 0.5rem; padding: 0.75rem 1.25rem; font-weight: 600; cursor: pointer;">Send</button>
+                <button type="button" id="chat-send" onclick="sendMessage()" style="background: var(--primary); color: var(--background); border: none; border-radius: 0.5rem; padding: 0.75rem 1.25rem; font-weight: 600; cursor: pointer;">Send</button>
             </div>
         </div>
     </section>
     <script>
         const chatInput = document.getElementById('chat-input');
         const chatMessages = document.getElementById('chat-messages');
+        const chatSendBtn = document.getElementById('chat-send');
+
+        /** AbortSignal.timeout is missing in some browsers; avoids hung fetches leaving Typing… forever */
+        function abortAfter(ms) {
+            if (typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function') {
+                return AbortSignal.timeout(ms);
+            }
+            const c = new AbortController();
+            setTimeout(function () {
+                c.abort();
+            }, ms);
+            return c.signal;
+        }
+
+        let chatInFlight = false;
 
         // Single Railway API (Helius routes + /api/chat) — no keys in the browser
         const CONFIG = {
@@ -707,7 +754,7 @@
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ message, history: aiChatHistory }),
-                    signal: AbortSignal.timeout(45000),
+                    signal: abortAfter(45000),
                 });
 
                 if (response.status === 429) {
@@ -861,14 +908,24 @@
             return CHAT_UNAVAILABLE;
         }
 
+        function removeTypingRows() {
+            chatMessages.querySelectorAll('.chat-typing-row').forEach(function (el) {
+                el.remove();
+            });
+        }
+
         async function sendMessage() {
             const message = chatInput.value.trim();
-            if (!message) return;
+            if (!message || chatInFlight) return;
+            chatInFlight = true;
+            chatInput.disabled = true;
+            if (chatSendBtn) chatSendBtn.disabled = true;
+
             addMessage('You', message, true);
             chatInput.value = '';
 
             const typing = document.createElement('div');
-            typing.id = 'typing';
+            typing.className = 'chat-typing-row';
             typing.innerHTML =
                 '<span style="color: var(--primary); font-weight: 600;">AnalX:</span> <span style="color: var(--foreground-muted);">Typing...</span>';
             chatMessages.appendChild(typing);
@@ -876,13 +933,15 @@
 
             try {
                 const response = await getResponse(message);
-                const el = document.getElementById('typing');
-                if (el) el.remove();
                 addMessage('AnalX', response);
             } catch (e) {
-                const el = document.getElementById('typing');
-                if (el) el.remove();
+                console.error(e);
                 addMessage('AnalX', 'Woof — something went wrong. Try again in a moment. 🐕');
+            } finally {
+                removeTypingRows();
+                chatInFlight = false;
+                chatInput.disabled = false;
+                if (chatSendBtn) chatSendBtn.disabled = false;
             }
         }
 
