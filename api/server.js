@@ -33,28 +33,45 @@ const CHAT_LIMIT_MESSAGE =
     "Yo — this ain't for full-blown convos, just quick $ANAL / lana.ai banter and facts. Refresh the page if you need a clean slate. DYOR. 🕳️⚡";
 
 const allowedOriginsRaw = (process.env.ALLOWED_ORIGINS || '')
-    .split(',')
+    .split(/[,;\n]+/)
     .map((s) => s.trim())
     .filter(Boolean);
 
-/** http://analbylana.xyz and https://analbylana.xyz are different browser origins — allow both when either is listed */
+/**
+ * When ALLOWED_ORIGINS is set, expand each entry so preflight succeeds for:
+ * - http vs https (same host)
+ * - www vs apex (e.g. analbylana.xyz vs www.analbylana.xyz are different origins)
+ */
 const allowedOriginsSet = (() => {
     if (allowedOriginsRaw.length === 0) return null;
     const set = new Set();
+    function addHttpHttpsForHost(hostWithPort) {
+        set.add(`https://${hostWithPort}`);
+        set.add(`http://${hostWithPort}`);
+    }
     for (const o of allowedOriginsRaw) {
-        set.add(o);
         try {
-            const u = new URL(o);
-            if (u.protocol === 'http:' || u.protocol === 'https:') {
-                set.add(`https://${u.host}`);
-                set.add(`http://${u.host}`);
+            const u = new URL(o.includes('://') ? o : `https://${o}`);
+            if (u.protocol !== 'http:' && u.protocol !== 'https:') continue;
+            const host = u.host;
+            addHttpHttpsForHost(host);
+            const hn = u.hostname;
+            if (hn === 'localhost' || /^\d{1,3}(\.\d{1,3}){3}$/.test(hn)) continue;
+            if (hn.startsWith('www.')) {
+                addHttpHttpsForHost(hn.slice(4) + (u.port ? `:${u.port}` : ''));
+            } else {
+                addHttpHttpsForHost(`www.${hn}` + (u.port ? `:${u.port}` : ''));
             }
         } catch (_) {
-            /* ignore invalid URL */
+            set.add(o);
         }
     }
     return set;
 })();
+
+if (allowedOriginsSet) {
+    console.log('CORS allowlist (' + allowedOriginsSet.size + ' origins):', [...allowedOriginsSet].sort().join(', '));
+}
 
 function normalizeHistory(raw) {
     if (!Array.isArray(raw)) return [];

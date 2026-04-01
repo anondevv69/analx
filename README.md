@@ -14,7 +14,7 @@ Monorepo for **$ANAL** / **Anal by lana.ai**: static site plus **one backend** (
 2. **Variables** (same service):
    - `HELIUS_API_KEY` — required  
    - `KIMI_API_KEY` — required  
-   - Optional: `TOKEN_MINT`, `KIMI_TEMPERATURE`, `ALLOWED_ORIGINS`, `MAX_USER_CHAT_PROMPTS` (default `5`), `CHAT_LIMIT_MESSAGE` (custom text when the limit is hit). For `ALLOWED_ORIGINS`, listing `https://yourdomain.com` is enough — the API also allows `http://` for the same host (visitors who open the site without HTTPS).
+   - Optional: `TOKEN_MINT`, `KIMI_TEMPERATURE`, `ALLOWED_ORIGINS`, `MAX_USER_CHAT_PROMPTS` (default `5`), `CHAT_LIMIT_MESSAGE` (custom text when the limit is hit). For `ALLOWED_ORIGINS`, use comma-separated origins (you can use newlines). Listing `https://yourdomain.com` also allows `http://` for that host, and `www` vs apex (e.g. `www.analbylana.xyz` vs `analbylana.xyz`). Add `https://anondevv69.github.io` if you test from the GitHub Pages URL. If unset, all origins are allowed (dev only).
 3. Deploy. Copy the public `*.up.railway.app` URL into `website/index.html` as **`CONFIG.API_URL`** (one URL for both chat and on-chain helpers).
 
 No `SERVICE` build arg — removed.
