@@ -3,6 +3,7 @@ const cors = require('cors');
 const fetch = require('node-fetch');
 const { SYSTEM_PROMPT } = require('./prompt');
 const { HELIUS_CHAT_SYSTEM_PROMPT } = require('./helius-chat-prompt');
+const { resolveAnalysisTarget } = require('./helius-chat-utils');
 const { READ_ONLY_RPC_METHODS } = require('./helius-rpc-allowlist');
 
 const HELIUS_API_KEY = process.env.HELIUS_API_KEY;
@@ -280,32 +281,105 @@ async function fetchJupiterTrending24h(limit) {
     }
 }
 
+/** Pump.fun program (mainnet) — recent signatures + enhanced parse sample */
+const PUMP_FUN_PROGRAM_ID = '6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P';
+
+async function fetchHeliusBalanceJson(address) {
+    return fetchHeliusRpcJson({
+        jsonrpc: '2.0',
+        id: 1,
+        method: 'getBalance',
+        params: [address],
+    });
+}
+
+async function fetchEnhancedAddressHistory(address, limit) {
+    const lim = Math.min(100, Math.max(1, limit));
+    const url = heliusEnhancedUrl(`v0/addresses/${encodeURIComponent(address)}/transactions`, {
+        limit: String(lim),
+    });
+    const r = await heliusEnhancedFetch(url);
+    if (r.kind === 'timeout' || r.kind === 'bad_json') return null;
+    if (!r.response.ok) return null;
+    return r.json;
+}
+
+async function fetchPumpFunProgramActivitySample() {
+    const sigData = await fetchHeliusRpcJson({
+        jsonrpc: '2.0',
+        id: 1,
+        method: 'getSignaturesForAddress',
+        params: [PUMP_FUN_PROGRAM_ID, { limit: 40 }],
+    });
+    if (sigData.__timedOut || sigData.error || !sigData.result) {
+        return { note: 'signatures_unavailable', detail: sigData.error || null };
+    }
+    const sigs = sigData.result
+        .map((x) => x.signature)
+        .filter(Boolean)
+        .slice(0, 20);
+    if (!sigs.length) return { signatures: [] };
+    const url = heliusEnhancedUrl('v0/transactions');
+    const er = await heliusEnhancedFetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ transactions: sigs }),
+    });
+    if (er.kind !== 'json' || !er.response.ok) {
+        return {
+            signatures: sigData.result.slice(0, 12),
+            enhanced: null,
+        };
+    }
+    return {
+        signatures: sigData.result.slice(0, 12),
+        enhanced: er.json,
+    };
+}
+
 /**
- * Builds CONTEXT for Kimi: holder status, DAS snapshot, optional Jupiter trending when user asks market-style questions.
+ * Rich CONTEXT: Solscan URL / pasted address → analysis target; DAS + Enhanced history for that target;
+ * optional Jupiter trending + Pump.fun program sample.
  */
-async function buildHeliusChatContext(wallet, userMessage, holderStatus) {
+async function buildHeliusChatContext(sessionWallet, userMessage, holderStatus) {
     const lower = (userMessage || '').toLowerCase();
+    const { target, source } = resolveAnalysisTarget(userMessage, sessionWallet);
+
     const wantTrend =
         /\b(trending|trend|hot tokens|top tokens|volume leaders|what'?s hot|24\s*h|leaderboard|market movers)\b/.test(
             lower
         );
 
-    const st = holderStatus || (await fetchAnalHolderStatus(wallet));
+    const wantPump =
+        /\b(pump\.fun|pumpfun|pump fun)\b/.test(lower) ||
+        (/\bpump\b/.test(lower) &&
+            /\b(trend|token|trade|hot|activity|feed|live)\b/.test(lower));
 
-    let dasPart = '';
-    const d = await fetchHeliusRpcJson({
+    const st = holderStatus || (await fetchAnalHolderStatus(sessionWallet));
+
+    const bal = await fetchHeliusBalanceJson(target);
+    const das = await fetchHeliusRpcJson({
         jsonrpc: '2.0',
         id: 1,
         method: 'getAssetsByOwner',
         params: {
-            ownerAddress: wallet,
+            ownerAddress: target,
             page: 1,
             limit: 25,
             displayOptions: { showFungible: true, showNativeBalance: true },
         },
     });
-    if (d && !d.__timedOut && !d.error && d.result) {
-        dasPart = JSON.stringify(d.result).slice(0, 8000);
+
+    let dasPart = '';
+    if (das && !das.__timedOut && !das.error && das.result) {
+        dasPart = JSON.stringify(das.result).slice(0, 10000);
+    }
+
+    const enhancedHistory = await fetchEnhancedAddressHistory(target, 28);
+    let enhancedPart = '';
+    if (enhancedHistory) {
+        const s = JSON.stringify(enhancedHistory);
+        enhancedPart = s.length > 18000 ? s.slice(0, 18000) + '\n…[truncated]' : s;
     }
 
     let trendingPart = '';
@@ -313,22 +387,46 @@ async function buildHeliusChatContext(wallet, userMessage, holderStatus) {
         const tr = await fetchJupiterTrending24h(15);
         if (tr && Array.isArray(tr) && tr.length) {
             trendingPart = JSON.stringify(tr).slice(0, 12000);
-        } else if (wantTrend && !JUPITER_API_KEY) {
+        } else if (!JUPITER_API_KEY) {
             trendingPart =
                 '[Jupiter trending unavailable: set JUPITER_API_KEY on the API server for live toptrending data.]';
         }
     }
 
+    let pumpPart = '';
+    if (wantPump) {
+        const pu = await fetchPumpFunProgramActivitySample();
+        pumpPart = JSON.stringify(pu).slice(0, 16000);
+    }
+
     const holderJson = st && !st.error ? JSON.stringify(st, null, 2).slice(0, 4000) : '{}';
+    const balStr =
+        bal && !bal.__timedOut && !bal.error
+            ? JSON.stringify(bal).slice(0, 2500)
+            : JSON.stringify(bal || {}).slice(0, 500);
 
     return {
         contextBlock:
-            '--- HOLDER (Helius) ---\n' +
+            '--- CONNECTED SESSION WALLET (signer / holder) ---\n' +
+            sessionWallet +
+            '\n\n--- HOLDER STATUS (ANAL / tier) ---\n' +
             holderJson +
-            '\n\n--- WALLET ASSETS DAS (Helius, truncated) ---\n' +
+            '\n\n--- ANALYSIS TARGET (on-chain queries use this address) ---\n' +
+            target +
+            '\n(target_source: ' +
+            source +
+            ' — explicit = user pasted another address or Solscan URL; session = connected wallet)\n' +
+            '\n--- TARGET: getBalance ---\n' +
+            balStr +
+            '\n\n--- TARGET: DAS getAssetsByOwner (truncated) ---\n' +
             dasPart +
+            '\n\n--- TARGET: Helius Enhanced · recent transactions (truncated) ---\n' +
+            enhancedPart +
             (trendingPart
-                ? '\n\n--- JUPITER TRENDING 24h (when applicable) ---\n' + trendingPart
+                ? '\n\n--- JUPITER TRENDING 24h (when user asked market/trend style) ---\n' + trendingPart
+                : '') +
+            (pumpPart
+                ? '\n\n--- PUMP.FUN PROGRAM · recent activity sample (signatures + enhanced) ---\n' + pumpPart
                 : ''),
     };
 }
