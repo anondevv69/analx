@@ -148,12 +148,6 @@
             color: var(--foreground-tertiary);
             font-style: italic;
         }
-        .chat-chips {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.45rem;
-            margin-bottom: 0.75rem;
-        }
         .chip {
             font-size: 0.78rem;
             padding: 0.35rem 0.65rem;
@@ -191,6 +185,15 @@
             margin: 0.5rem 0 0.65rem;
             line-height: 1.45;
         }
+        .research-section-label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--foreground-tertiary);
+            margin: 0.85rem 0 0.45rem;
+            font-weight: 600;
+        }
+        .research-hint + .research-section-label { margin-top: 0.35rem; }
         .research-fields { display: grid; gap: 0.55rem; margin-bottom: 0.65rem; }
         .research-fields label {
             font-size: 0.72rem;
@@ -319,13 +322,21 @@
             <div class="card chat-card">
                 <h2>Chat</h2>
                 <p style="font-size:0.85rem;color:var(--foreground-muted);margin-bottom:0.75rem;">
-                    Ask in plain language, or use <strong>Quick research</strong> — replies use <strong>Helius</strong> on-chain context for your wallet (and any address or mint you paste).
+                    Type below, or open <strong>Quick research</strong> for shortcuts. Replies use <strong>Helius</strong> on-chain context.
                 </p>
                 <details class="research-panel" open>
                     <summary>Quick research</summary>
                     <p class="research-hint">
-                        Paste a <strong>wallet</strong> or Solscan link, and/or a <strong>token mint</strong>, then tap an action — or type any question below.
+                        <strong>Connected wallet</strong> buttons use the address you linked with Phantom. <strong>Other wallet or token</strong> — paste fields first, then run the matching action. Or type any question in the box below.
                     </p>
+                    <p class="research-section-label">Connected wallet</p>
+                    <div class="research-actions" aria-label="Actions for connected wallet">
+                        <button type="button" class="chip research-run" data-run="my-wallet">Overview</button>
+                        <button type="button" class="chip research-run" data-run="recent-activity">Recent activity</button>
+                        <button type="button" class="chip research-run" data-run="pumpfun">Pump.fun sample</button>
+                        <button type="button" class="chip research-run" data-run="what-can-you-do">What can you do?</button>
+                    </div>
+                    <p class="research-section-label">Other wallet or token</p>
                     <div class="research-fields">
                         <div>
                             <label for="research-wallet">Wallet or Solscan URL</label>
@@ -336,21 +347,13 @@
                             <input type="text" id="research-mint" placeholder="SPL mint address" autocomplete="off" spellcheck="false" />
                         </div>
                     </div>
-                    <div class="research-actions" aria-label="Quick research actions">
-                        <button type="button" class="chip research-run" data-run="my-wallet">My wallet</button>
-                        <button type="button" class="chip research-run" data-run="recent-activity">Recent activity</button>
-                        <button type="button" class="chip research-run" data-run="pumpfun">Pump.fun sample</button>
-                        <button type="button" class="chip research-run" data-run="wallet-dive">Wallet (paste above)</button>
-                        <button type="button" class="chip research-run" data-run="token-mint">Token mint (paste above)</button>
+                    <div class="research-actions" aria-label="Actions using pasted fields">
+                        <button type="button" class="chip research-run" data-run="wallet-dive">Analyze wallet</button>
+                        <button type="button" class="chip research-run" data-run="token-mint">Analyze mint</button>
                         <button type="button" class="chip research-run" data-run="wallet-and-token">Wallet + mint</button>
                     </div>
                 </details>
                 <div id="chat-messages" class="chat-messages" aria-live="polite"></div>
-                <div class="chat-chips" aria-label="Starters">
-                    <button type="button" class="chip" data-prompt="Using CONTEXT for my connected wallet: summarize SOL balance, main tokens/NFTs, and recent transactions in plain language. Be concise.">Wallet overview</button>
-                    <button type="button" class="chip" data-prompt="Using CONTEXT: describe my recent on-chain activity — transfers, swaps, and programs involved (e.g. Jupiter, Pump.fun) — with rough timing if visible.">Recent activity</button>
-                    <button type="button" class="chip" data-prompt="What does AnalX do, and what data from CONTEXT can you use for this wallet? One short paragraph.">What can you do?</button>
-                </div>
                 <div class="chat-input-row">
                     <input type="text" id="chat-input" placeholder="Reply…" autocomplete="off" />
                     <button type="button" class="btn" id="chat-send">Send</button>
@@ -760,6 +763,10 @@
                     msg =
                         'What does recent Pump.fun program activity look like in CONTEXT? Summarize which tokens show up, buy/sell flavor if visible, and stress that this is a sample feed — high risk, DYOR.';
                     break;
+                case 'what-can-you-do':
+                    msg =
+                        'What does AnalX do, and what data from CONTEXT can you use for my connected wallet? One short paragraph.';
+                    break;
                 case 'wallet-dive':
                     if (!w) {
                         appendSystem('Paste a wallet address or Solscan account URL in the first field.');
@@ -799,16 +806,6 @@
             if (chatInput) chatInput.value = msg;
             sendHeliusChat();
         }
-
-        document.querySelectorAll('.chip[data-prompt]').forEach(function (chip) {
-            chip.addEventListener('click', function () {
-                const p = chip.getAttribute('data-prompt');
-                if (chatInput && p) {
-                    chatInput.value = p;
-                    sendHeliusChat();
-                }
-            });
-        });
 
         document.querySelectorAll('.research-run').forEach(function (btn) {
             btn.addEventListener('click', function () {
