@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lana.ai talk — $ANAL holder tools | Anal by lana.ai</title>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Serif:wght@400;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #45b399;
+            --primary-dark: #3a9a82;
+            --background: #060c0a;
+            --background-card: #0c110f;
+            --background-secondary: #131a17;
+            --foreground: #e8edeb;
+            --foreground-muted: #9ba7a3;
+            --foreground-tertiary: #5a6663;
+            --border: rgba(255,255,255,0.09);
+            --accent: #ec4899;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'IBM Plex Sans', sans-serif;
+            background: var(--background);
+            color: var(--foreground);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+        .bg-animation {
+            position: fixed; inset: 0; z-index: -1;
+            background: radial-gradient(ellipse at 20% 80%, rgba(69,179,153,0.08) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 20%, rgba(69,179,153,0.05) 0%, transparent 50%);
+        }
+        header {
+            padding: 1rem 5%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            background: rgba(6,12,10,0.9);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border);
+        }
+        .logo { font-family: 'IBM Plex Serif', serif; font-size: 1.5rem; font-weight: 600; }
+        .logo a { color: var(--primary); text-decoration: none; }
+        nav { display: flex; gap: 1.25rem; flex-wrap: wrap; }
+        nav a { color: var(--foreground-muted); text-decoration: none; font-size: 0.9rem; font-weight: 500; }
+        nav a:hover { color: var(--primary); }
+        main { max-width: 720px; margin: 0 auto; padding: 5.5rem 5% 4rem; }
+        h1 {
+            font-family: 'IBM Plex Serif', serif;
+            font-size: clamp(1.75rem, 5vw, 2.25rem);
+            margin-bottom: 0.5rem;
+            letter-spacing: -0.02em;
+        }
+        .lede { color: var(--foreground-muted); font-size: 0.95rem; margin-bottom: 2rem; }
+        .card {
+            background: var(--background-card);
+            border: 1px solid var(--border);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            margin-bottom: 1.25rem;
+        }
+        .card h2 { font-size: 1rem; margin-bottom: 0.75rem; color: var(--foreground); }
+        .btn {
+            display: inline-block;
+            background: var(--primary);
+            color: var(--background);
+            border: none;
+            border-radius: 0.5rem;
+            padding: 0.65rem 1.25rem;
+            font-weight: 600;
+            font-family: inherit;
+            cursor: pointer;
+            font-size: 0.95rem;
+        }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn-secondary {
+            background: transparent;
+            color: var(--primary);
+            border: 1px solid var(--primary);
+        }
+        .status { font-size: 0.9rem; color: var(--foreground-muted); margin-top: 1rem; }
+        .status.error { color: #f87171; }
+        .status.ok { color: var(--primary); }
+        .hidden { display: none !important; }
+        .tools-grid { display: grid; gap: 0.75rem; }
+        .tool-btn {
+            text-align: left;
+            background: var(--background-secondary);
+            border: 1px solid var(--border);
+            color: var(--foreground);
+            padding: 0.85rem 1rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 0.9rem;
+        }
+        .tool-btn:hover { border-color: var(--primary); color: var(--primary); }
+        pre.out {
+            margin-top: 0.75rem;
+            padding: 1rem;
+            background: #0a100e;
+            border-radius: 0.5rem;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 0.72rem;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-break: break-word;
+            max-height: 320px;
+            overflow-y: auto;
+            color: var(--foreground-muted);
+        }
+        .links a { color: var(--primary); font-weight: 600; }
+        .fine { font-size: 0.8rem; color: var(--foreground-tertiary); margin-top: 1rem; }
+    </style>
+</head>
+<body>
+    <div class="bg-animation"></div>
+    <header>
+        <div class="logo"><a href="index.html">$ANAL</a></div>
+        <nav aria-label="Site">
+            <a href="index.html#story">Story</a>
+            <a href="index.html#token">Token</a>
+            <a href="index.html#chat">Chat</a>
+            <a href="lana-talk.html" aria-current="page">Lana.ai talk</a>
+        </nav>
+    </header>
+    <main>
+        <h1>Lana.ai talk</h1>
+        <p class="lede">
+            Connect a Solana wallet. We use Helius to check that you hold <strong>$ANAL</strong>
+            (<span style="font-family:'IBM Plex Mono',monospace;font-size:0.85rem;">95DJix…85DKvHK</span>).
+            Unlocks read-only data tools for research — same Helius-backed routes as the main site, in one place.
+            DYOR; not financial advice.
+        </p>
+
+        <div id="panel-connect" class="card">
+            <h2>Wallet</h2>
+            <p style="font-size:0.9rem;color:var(--foreground-muted);margin-bottom:1rem;">
+                Use <strong>Phantom</strong> (or another wallet that injects <code style="font-size:0.8rem;">window.solana</code>).
+            </p>
+            <button type="button" class="btn" id="btn-connect">Connect wallet</button>
+            <button type="button" class="btn btn-secondary hidden" id="btn-disconnect">Disconnect</button>
+            <div class="status" id="connect-status"></div>
+        </div>
+
+        <div id="panel-denied" class="card hidden">
+            <h2>Not detected as a holder</h2>
+            <p class="status error" id="denied-text"></p>
+            <p class="fine">You can still use the public <a href="index.html#chat" class="links">chat</a> and on-chain keywords on the home page when the API is up.</p>
+        </div>
+
+        <div id="panel-tools" class="hidden">
+            <div class="card">
+                <h2>Holder verified</h2>
+                <p class="status ok" id="holder-line"></p>
+                <p class="fine" id="wallet-line"></p>
+            </div>
+            <div class="card">
+                <h2>Helius data (read-only)</h2>
+                <p style="font-size:0.88rem;color:var(--foreground-muted);margin-bottom:1rem;">
+                    Fetches go through the AnalX API (your Helius key stays on the server).
+                    Full API catalog: <a class="links" href="https://www.helius.dev/docs/api-reference" target="_blank" rel="noopener noreferrer">Helius docs</a>.
+                </p>
+                <div class="tools-grid">
+                    <button type="button" class="tool-btn" data-endpoint="/api/supply">Token supply</button>
+                    <button type="button" class="tool-btn" data-endpoint="/api/holders">Largest holders</button>
+                    <button type="button" class="tool-btn" data-endpoint="/api/token">Token metadata (DAS getAsset)</button>
+                    <button type="button" class="tool-btn" data-endpoint="/api/transactions">Recent mint signatures</button>
+                    <button type="button" class="tool-btn" id="btn-my-accounts">Your ANAL token accounts</button>
+                </div>
+                <pre class="out hidden" id="tool-output"></pre>
+            </div>
+            <div class="card">
+                <h2>lana.ai</h2>
+                <p style="font-size:0.9rem;color:var(--foreground-muted);">
+                    Learn about the deployment stack and agents at
+                    <a class="links" href="https://lana.ai" target="_blank" rel="noopener noreferrer">lana.ai</a>.
+                </p>
+            </div>
+        </div>
+    </main>
+    <script>
+        const CONFIG = { API_URL: 'https://analx-production.up.railway.app' };
+        const MINT_SHORT = '95DJixZhoy898shqxoZy5riztdf95fTqLXBog85DKvHK';
+
+        const btnConnect = document.getElementById('btn-connect');
+        const btnDisconnect = document.getElementById('btn-disconnect');
+        const connectStatus = document.getElementById('connect-status');
+        const panelDenied = document.getElementById('panel-denied');
+        const deniedText = document.getElementById('denied-text');
+        const panelTools = document.getElementById('panel-tools');
+        const holderLine = document.getElementById('holder-line');
+        const walletLine = document.getElementById('wallet-line');
+        const toolOutput = document.getElementById('tool-output');
+
+        let publicKey = null;
+
+        function getProvider() {
+            return window.solana || window.phantom?.solana;
+        }
+
+        async function verifyHolder(address) {
+            const r = await fetch(CONFIG.API_URL + '/api/holder/anal/' + encodeURIComponent(address));
+            const text = await r.text();
+            if (!r.ok) {
+                try {
+                    const err = JSON.parse(text);
+                    throw new Error(err.error || text);
+                } catch (e) {
+                    if (e.message && e.message !== text) throw e;
+                    throw new Error('HTTP ' + r.status + ' ' + text.slice(0, 120));
+                }
+            }
+            return JSON.parse(text);
+        }
+
+        async function runVerifyFlow() {
+            connectStatus.textContent = '';
+            panelDenied.classList.add('hidden');
+            panelTools.classList.add('hidden');
+            deniedText.textContent = '';
+
+            const provider = getProvider();
+            if (!provider) {
+                connectStatus.textContent = 'No Solana wallet found. Install Phantom or open this page in a supported browser.';
+                connectStatus.classList.add('error');
+                return;
+            }
+
+            try {
+                const resp = await provider.connect();
+                publicKey = resp.publicKey.toString();
+            } catch (e) {
+                connectStatus.textContent = e.message || 'Connection cancelled.';
+                connectStatus.classList.add('error');
+                return;
+            }
+
+            btnConnect.classList.add('hidden');
+            btnDisconnect.classList.remove('hidden');
+            connectStatus.textContent = 'Checking ' + publicKey.slice(0, 4) + '…' + publicKey.slice(-4) + ' on-chain…';
+            connectStatus.classList.remove('error');
+
+            let data;
+            try {
+                data = await verifyHolder(publicKey);
+            } catch (e) {
+                console.error(e);
+                connectStatus.textContent = '';
+                connectStatus.classList.add('error');
+                panelDenied.classList.remove('hidden');
+                deniedText.textContent = 'Could not verify: ' + (e.message || String(e));
+                btnConnect.classList.remove('hidden');
+                btnDisconnect.classList.add('hidden');
+                return;
+            }
+
+            connectStatus.textContent = '';
+
+            if (!data.isHolder) {
+                panelDenied.classList.remove('hidden');
+                deniedText.textContent =
+                    'No $ANAL balance found for this wallet for mint ' + MINT_SHORT + '.';
+                btnConnect.classList.remove('hidden');
+                btnDisconnect.classList.add('hidden');
+                return;
+            }
+
+            holderLine.textContent =
+                'Verified: ~' + (data.uiAmount != null ? Number(data.uiAmount).toLocaleString(undefined, { maximumFractionDigits: 4 }) : '?') + ' ANAL (raw ' + data.amountRaw + ').';
+            walletLine.textContent = 'Wallet: ' + publicKey;
+            panelTools.classList.remove('hidden');
+        }
+
+        btnConnect.addEventListener('click', function () {
+            runVerifyFlow();
+        });
+
+        btnDisconnect.addEventListener('click', async function () {
+            const provider = getProvider();
+            try {
+                if (provider && provider.disconnect) await provider.disconnect();
+            } catch (_) {}
+            publicKey = null;
+            btnConnect.classList.remove('hidden');
+            btnDisconnect.classList.add('hidden');
+            panelTools.classList.add('hidden');
+            panelDenied.classList.add('hidden');
+            connectStatus.textContent = '';
+            toolOutput.classList.add('hidden');
+            toolOutput.textContent = '';
+        });
+
+        document.querySelectorAll('.tool-btn[data-endpoint]').forEach(function (btn) {
+            btn.addEventListener('click', async function () {
+                const path = btn.getAttribute('data-endpoint');
+                toolOutput.classList.remove('hidden');
+                toolOutput.textContent = 'Loading ' + path + '…';
+                try {
+                    const r = await fetch(CONFIG.API_URL + path);
+                    const json = await r.json();
+                    toolOutput.textContent = JSON.stringify(json, null, 2);
+                } catch (e) {
+                    toolOutput.textContent = String(e);
+                }
+            });
+        });
+
+        document.getElementById('btn-my-accounts').addEventListener('click', async function () {
+            if (!publicKey) return;
+            toolOutput.classList.remove('hidden');
+            toolOutput.textContent = 'Loading your token accounts…';
+            try {
+                const r = await fetch(CONFIG.API_URL + '/api/account/' + encodeURIComponent(publicKey));
+                const json = await r.json();
+                toolOutput.textContent = JSON.stringify(json, null, 2);
+            } catch (e) {
+                toolOutput.textContent = String(e);
+            }
+        });
+    </script>
+</body>
+</html>

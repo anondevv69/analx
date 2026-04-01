@@ -4,7 +4,7 @@ Monorepo for **$ANAL** / **Anal by lana.ai**: static site plus **one backend** (
 
 | Directory | Role |
 |-----------|------|
-| `website/` | Single-page site (GitHub Pages, Vercel, Netlify, etc.). |
+| `website/` | Static site (GitHub Pages, etc.). **`lana-talk.html`** — connect Phantom, verify $ANAL via Helius, unlock holder data tools. |
 | `api/` | **Production backend** — Express app: Helius proxy routes + `POST /api/chat` (Kimi). Deploy this to Railway. |
 | `helius-proxy/`, `ai-agent/` | Legacy split (optional reference); behavior lives in `api/`. |
 

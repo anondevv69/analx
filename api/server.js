@@ -73,6 +73,46 @@ if (allowedOriginsSet) {
     console.log('CORS allowlist (' + allowedOriginsSet.size + ' origins):', [...allowedOriginsSet].sort().join(', '));
 }
 
+async function fetchAnalHolderStatus(walletAddress) {
+    const response = await fetch(`https://mainnet.helius-rpc.com/?api-key=${HELIUS_API_KEY}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            jsonrpc: '2.0',
+            id: 1,
+            method: 'getTokenAccountsByOwner',
+            params: [walletAddress, { mint: TOKEN_MINT }, { encoding: 'jsonParsed' }],
+        }),
+    });
+    const data = await response.json();
+    if (data.error) {
+        return { error: data.error.message || 'Helius RPC error' };
+    }
+    const value = data.result?.value || [];
+    let total = BigInt(0);
+    let decimals = 9;
+    for (const acc of value) {
+        const ta = acc?.account?.data?.parsed?.info?.tokenAmount;
+        if (ta) {
+            try {
+                total += BigInt(String(ta.amount || '0'));
+            } catch (_) {
+                /* ignore */
+            }
+            if (typeof ta.decimals === 'number') decimals = ta.decimals;
+        }
+    }
+    const uiAmount = Number(total) / 10 ** decimals;
+    return {
+        address: walletAddress,
+        mint: TOKEN_MINT,
+        isHolder: total > BigInt(0),
+        amountRaw: total.toString(),
+        uiAmount,
+        decimals,
+    };
+}
+
 function normalizeHistory(raw) {
     if (!Array.isArray(raw)) return [];
     const out = [];
@@ -98,6 +138,22 @@ app.use(
     })
 );
 app.use(express.json());
+
+app.get('/api/holder/anal/:address', async (req, res) => {
+    try {
+        const { address } = req.params;
+        if (!address || address.length < 32 || address.length > 52) {
+            return res.status(400).json({ error: 'Invalid Solana address' });
+        }
+        const result = await fetchAnalHolderStatus(address);
+        if (result.error) {
+            return res.status(502).json({ error: result.error });
+        }
+        res.json(result);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
 
 app.get('/', (req, res) => {
     res.json({
