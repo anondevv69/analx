@@ -32,10 +32,29 @@ const CHAT_LIMIT_MESSAGE =
     process.env.CHAT_LIMIT_MESSAGE ||
     "Yo — this ain't for full-blown convos, just quick $ANAL / lana.ai banter and facts. Refresh the page if you need a clean slate. DYOR. 🕳️⚡";
 
-const allowedOrigins = (process.env.ALLOWED_ORIGINS || '')
+const allowedOriginsRaw = (process.env.ALLOWED_ORIGINS || '')
     .split(',')
     .map((s) => s.trim())
     .filter(Boolean);
+
+/** http://analbylana.xyz and https://analbylana.xyz are different browser origins — allow both when either is listed */
+const allowedOriginsSet = (() => {
+    if (allowedOriginsRaw.length === 0) return null;
+    const set = new Set();
+    for (const o of allowedOriginsRaw) {
+        set.add(o);
+        try {
+            const u = new URL(o);
+            if (u.protocol === 'http:' || u.protocol === 'https:') {
+                set.add(`https://${u.host}`);
+                set.add(`http://${u.host}`);
+            }
+        } catch (_) {
+            /* ignore invalid URL */
+        }
+    }
+    return set;
+})();
 
 function normalizeHistory(raw) {
     if (!Array.isArray(raw)) return [];
@@ -54,10 +73,10 @@ const app = express();
 app.use(
     cors({
         origin: (origin, callback) => {
-            if (!origin || allowedOrigins.length === 0) {
+            if (!origin || allowedOriginsSet === null) {
                 return callback(null, true);
             }
-            callback(null, allowedOrigins.includes(origin));
+            callback(null, allowedOriginsSet.has(origin));
         },
     })
 );
