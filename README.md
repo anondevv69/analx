@@ -4,7 +4,7 @@ Monorepo for **$ANAL** / **Anal by lana.ai**: static site plus **one backend** (
 
 | Directory | Role |
 |-----------|------|
-| `website/` | **`lana-talk.html`** — wallet connect; ≥42,069 ANAL unlocks **Anal chat** (Helius-backed) + quick research actions. |
+| `website/` | **`lana-talk.html`** — wallet connect; ≥42,069 ANAL unlocks **Anal chat** (Helius-backed); users paste addresses or Solscan links in messages. |
 | `api/` | Express: **`POST /api/helius/rpc`**, **[Enhanced Transactions](https://www.helius.dev/docs/api-reference/enhanced-transactions/overview)** proxies (`/api/helius/enhanced/...`, holder gate), `POST /api/chat` (Kimi, home page). |
 | `helius-proxy/`, `ai-agent/` | Legacy split (optional reference); behavior lives in `api/`. |
 
@@ -31,7 +31,7 @@ Home page: on-chain keywords hit `/api/supply`, `/api/holders`, etc.; other mess
 
 After wallet verification (≥42,069 ANAL) and optional **`HOLDER_TOOLS_PASSWORD`**:
 
-- **`POST /api/holder/helius-chat`** — `{ "wallet", "message", "history" }`. **Kimi** + `api/helius-chat-prompt.js`; server injects **Helius** DAS + holder snapshot, and **Jupiter** trending (if `JUPITER_API_KEY` set) when the user asks market/trend-style questions. Tier prompt limits match holder tiers (`ANAL_TIER*_PROMPTS`).
+- **`POST /api/holder/helius-chat`** — `{ "wallet", "message", "history" }`. LLM + `api/helius-chat-prompt.js`; server injects **Helius** DAS + holder snapshot, and **Jupiter** trending (if `JUPITER_API_KEY` set) when the user asks market/trend-style questions. **`history`** supports long threads (default last **24** messages; override with **`HELIUS_CHAT_HISTORY_MESSAGES`**, max 48). Tier prompt limits match holder tiers (`ANAL_TIER*_PROMPTS`).
 - **`POST /api/helius/rpc`** — `{ "wallet", "method", "params" }` (allowlisted read-only). **`GET /api/helius/allowed-methods`** lists methods.
 - **Enhanced Transactions** ([Helius docs](https://www.helius.dev/docs/api-reference/enhanced-transactions/overview)): **`POST /api/helius/enhanced/transactions`**, **`GET /api/helius/enhanced/addresses/:address/transactions?wallet=...`**
 

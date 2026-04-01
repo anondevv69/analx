@@ -284,6 +284,12 @@ async function heliusEnhancedFetch(urlObj, init = {}) {
     }
 }
 
+/** Max prior messages sent to the LLM (user+assistant pairs); higher = longer research threads. */
+const HELIUS_CHAT_HISTORY_CAP = Math.min(
+    48,
+    Math.max(4, parseInt(process.env.HELIUS_CHAT_HISTORY_MESSAGES || '24', 10) || 24)
+);
+
 function normalizeHistory(raw) {
     if (!Array.isArray(raw)) return [];
     const out = [];
@@ -293,7 +299,7 @@ function normalizeHistory(raw) {
         if (!role) continue;
         out.push({ role, content: item.content.slice(0, 8000) });
     }
-    return out.slice(-10);
+    return out.slice(-HELIUS_CHAT_HISTORY_CAP);
 }
 
 /**

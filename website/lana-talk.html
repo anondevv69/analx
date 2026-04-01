@@ -148,77 +148,6 @@
             color: var(--foreground-tertiary);
             font-style: italic;
         }
-        .chip {
-            font-size: 0.78rem;
-            padding: 0.35rem 0.65rem;
-            border-radius: 999px;
-            border: 1px solid var(--border);
-            background: var(--background-card);
-            color: var(--foreground-muted);
-            cursor: pointer;
-            font-family: inherit;
-        }
-        .chip:hover { border-color: var(--primary); color: var(--primary); }
-        details.research-panel {
-            margin-bottom: 0.85rem;
-            padding: 0.75rem 0.85rem;
-            background: rgba(0,0,0,0.2);
-            border: 1px solid var(--border);
-            border-radius: 0.5rem;
-        }
-        details.research-panel summary {
-            cursor: pointer;
-            font-size: 0.88rem;
-            font-weight: 600;
-            color: var(--foreground-muted);
-            list-style: none;
-        }
-        details.research-panel summary::-webkit-details-marker { display: none; }
-        details.research-panel summary::before {
-            content: '▸ ';
-            color: var(--primary);
-        }
-        details.research-panel[open] summary::before { content: '▾ '; }
-        .research-hint {
-            font-size: 0.78rem;
-            color: var(--foreground-tertiary);
-            margin: 0.5rem 0 0.65rem;
-            line-height: 1.45;
-        }
-        .research-section-label {
-            font-size: 0.7rem;
-            text-transform: uppercase;
-            letter-spacing: 0.06em;
-            color: var(--foreground-tertiary);
-            margin: 0.85rem 0 0.45rem;
-            font-weight: 600;
-        }
-        .research-hint + .research-section-label { margin-top: 0.35rem; }
-        .research-fields { display: grid; gap: 0.55rem; margin-bottom: 0.65rem; }
-        .research-fields label {
-            font-size: 0.72rem;
-            text-transform: uppercase;
-            letter-spacing: 0.04em;
-            color: var(--foreground-tertiary);
-            display: block;
-            margin-bottom: 0.25rem;
-        }
-        .research-fields input {
-            width: 100%;
-            background: #0a100e;
-            border: 1px solid var(--border);
-            border-radius: 0.45rem;
-            padding: 0.5rem 0.6rem;
-            color: var(--foreground);
-            font-family: 'IBM Plex Mono', monospace;
-            font-size: 0.78rem;
-        }
-        .research-actions {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.4rem;
-        }
-        .research-actions .chip { font-size: 0.74rem; padding: 0.32rem 0.6rem; }
         #chat-input {
             flex: 1;
             min-width: 140px;
@@ -322,37 +251,8 @@
             <div class="card chat-card">
                 <h2>Chat</h2>
                 <p style="font-size:0.85rem;color:var(--foreground-muted);margin-bottom:0.75rem;">
-                    Type below, or open <strong>Quick research</strong> for shortcuts. Replies use <strong>Helius</strong> on-chain context.
+                    Ask in plain language. Paste a <strong>Solscan</strong> link or any <strong>Solana address</strong> in your message — the server resolves it and loads <strong>Helius</strong> context for that target (your connected wallet is the default when you don’t specify another address).
                 </p>
-                <details class="research-panel" open>
-                    <summary>Quick research</summary>
-                    <p class="research-hint">
-                        <strong>Connected wallet</strong> buttons use the address you linked with Phantom. <strong>Other wallet or token</strong> — paste fields first, then run the matching action. Or type any question in the box below.
-                    </p>
-                    <p class="research-section-label">Connected wallet</p>
-                    <div class="research-actions" aria-label="Actions for connected wallet">
-                        <button type="button" class="chip research-run" data-run="my-wallet">Overview</button>
-                        <button type="button" class="chip research-run" data-run="recent-activity">Recent activity</button>
-                        <button type="button" class="chip research-run" data-run="pumpfun">Pump.fun sample</button>
-                        <button type="button" class="chip research-run" data-run="what-can-you-do">What can you do?</button>
-                    </div>
-                    <p class="research-section-label">Other wallet or token</p>
-                    <div class="research-fields">
-                        <div>
-                            <label for="research-wallet">Wallet or Solscan URL</label>
-                            <input type="text" id="research-wallet" placeholder="e.g. FvHL… or https://solscan.io/account/…" autocomplete="off" spellcheck="false" />
-                        </div>
-                        <div>
-                            <label for="research-mint">Token mint</label>
-                            <input type="text" id="research-mint" placeholder="SPL mint address" autocomplete="off" spellcheck="false" />
-                        </div>
-                    </div>
-                    <div class="research-actions" aria-label="Actions using pasted fields">
-                        <button type="button" class="chip research-run" data-run="wallet-dive">Analyze wallet</button>
-                        <button type="button" class="chip research-run" data-run="token-mint">Analyze mint</button>
-                        <button type="button" class="chip research-run" data-run="wallet-and-token">Wallet + mint</button>
-                    </div>
-                </details>
                 <div id="chat-messages" class="chat-messages" aria-live="polite"></div>
                 <div class="chat-input-row">
                     <input type="text" id="chat-input" placeholder="Reply…" autocomplete="off" />
@@ -648,7 +548,7 @@
                 chatMessages.innerHTML = '';
                 aiHistory = [];
                 appendAssistantMarkdown(
-                    '**Wallet connected.** You are chatting with **AnalX** — **Anal chat** uses **Helius** on-chain context for **$ANAL** holders. Ask about **your wallet**, **a pasted address**, **a token mint**, or **Pump.fun**-style activity from the data we load.'
+                    '**Wallet connected.** Chat with **AnalX** here — replies use **Helius** data loaded for your message (mention another address or Solscan link anytime).'
                 );
             }
             panelTools.classList.remove('hidden');
@@ -738,79 +638,6 @@
             connectStatus.textContent = '';
             if (chatMessages) chatMessages.innerHTML = '';
             aiHistory = [];
-        });
-
-        function runResearchAction(kind) {
-            if (!publicKey) {
-                appendSystem('Connect a wallet first.');
-                return;
-            }
-            const wEl = document.getElementById('research-wallet');
-            const mEl = document.getElementById('research-mint');
-            const w = wEl ? wEl.value.trim() : '';
-            const m = mEl ? mEl.value.trim() : '';
-            let msg = '';
-            switch (kind) {
-                case 'my-wallet':
-                    msg =
-                        'Analyze my connected wallet using CONTEXT: SOL balance, major tokens, recent activity summary, and concise risks.';
-                    break;
-                case 'recent-activity':
-                    msg =
-                        'Using CONTEXT for my connected wallet: summarize recent transactions — transfers, swaps, programs (e.g. Jupiter, Pump.fun), and rough timing. No market-wide trending data unless it appears in CONTEXT.';
-                    break;
-                case 'pumpfun':
-                    msg =
-                        'What does recent Pump.fun program activity look like in CONTEXT? Summarize which tokens show up, buy/sell flavor if visible, and stress that this is a sample feed — high risk, DYOR.';
-                    break;
-                case 'what-can-you-do':
-                    msg =
-                        'What does AnalX do, and what data from CONTEXT can you use for my connected wallet? One short paragraph.';
-                    break;
-                case 'wallet-dive':
-                    if (!w) {
-                        appendSystem('Paste a wallet address or Solscan account URL in the first field.');
-                        return;
-                    }
-                    msg =
-                        'Tell me about this wallet — use the analysis target in CONTEXT for on-chain data:\n' +
-                        w +
-                        '\n\nGive: wallet overview, holdings, recent activity in plain language, observations, and risks.';
-                    break;
-                case 'token-mint':
-                    if (!m) {
-                        appendSystem('Paste a token mint in the second field.');
-                        return;
-                    }
-                    msg =
-                        'Analyze SPL token mint ' +
-                        m +
-                        ' using CONTEXT. Summarize metadata / signals you see and risks. Explorer: https://solscan.io/token/' +
-                        m;
-                    break;
-                case 'wallet-and-token':
-                    if (!w || !m) {
-                        appendSystem('Fill both wallet (or Solscan URL) and token mint for this action.');
-                        return;
-                    }
-                    msg =
-                        'Using CONTEXT: relate wallet ' +
-                        w +
-                        ' to token mint ' +
-                        m +
-                        ' — does this wallet hold or interact with this token? Recent activity? Notable risks?';
-                    break;
-                default:
-                    return;
-            }
-            if (chatInput) chatInput.value = msg;
-            sendHeliusChat();
-        }
-
-        document.querySelectorAll('.research-run').forEach(function (btn) {
-            btn.addEventListener('click', function () {
-                runResearchAction(btn.getAttribute('data-run'));
-            });
         });
 
         if (chatSend && chatInput) {
