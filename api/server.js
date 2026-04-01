@@ -1,7 +1,8 @@
 const express = require('express');
 const cors = require('cors');
 const fetch = require('node-fetch');
-const { SYSTEM_PROMPT, HOLDER_RESEARCH_APPEND } = require('./prompt');
+const { SYSTEM_PROMPT } = require('./prompt');
+const { READ_ONLY_RPC_METHODS } = require('./helius-rpc-allowlist');
 
 const HELIUS_API_KEY = process.env.HELIUS_API_KEY;
 const KIMI_API_KEY = process.env.KIMI_API_KEY;
@@ -398,9 +399,67 @@ app.post('/api/das/assets-by-owner', async (req, res) => {
     }
 });
 
+app.get('/api/helius/allowed-methods', (req, res) => {
+    res.json([...READ_ONLY_RPC_METHODS].sort());
+});
+
+app.post('/api/helius/rpc', async (req, res) => {
+    try {
+        const { method, params, wallet } = req.body || {};
+        if (!wallet || typeof wallet !== 'string') {
+            return res.status(400).json({ error: 'wallet required (connected holder address)' });
+        }
+        const w = wallet.trim();
+        if (w.length < 32 || w.length > 52) {
+            return res.status(400).json({ error: 'invalid_wallet' });
+        }
+        const st = await fetchAnalHolderStatus(w);
+        if (st.error) {
+            return res.status(502).json({ error: st.error });
+        }
+        if (!st.eligibleForChat) {
+            return res.status(403).json({
+                error: 'insufficient_anal',
+                minAnalForChatUi: ANAL_TIER1_MIN_UI,
+            });
+        }
+        if (!method || typeof method !== 'string') {
+            return res.status(400).json({ error: 'method required' });
+        }
+        if (!READ_ONLY_RPC_METHODS.has(method)) {
+            return res.status(403).json({
+                error: 'method_not_allowed',
+                message: 'Only read-only RPC/DAS methods are allowed (no sendTransaction, simulate, airdrop, etc.).',
+            });
+        }
+        if (params === undefined) {
+            return res.status(400).json({
+                error: 'params required',
+                hint: 'Use a JSON array for most RPC calls, or an object for DAS methods like getAssetsByOwner.',
+            });
+        }
+        const paramsStr = JSON.stringify(params);
+        if (paramsStr.length > 24000) {
+            return res.status(400).json({ error: 'params too large' });
+        }
+        const data = await fetchHeliusRpcJson({
+            jsonrpc: '2.0',
+            id: 1,
+            method,
+            params,
+        });
+        if (data.__timedOut) {
+            return res.status(504).json({ error: 'Helius timeout' });
+        }
+        res.json(data);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
 app.post('/api/chat', async (req, res) => {
     try {
-        const { message, history, wallet } = req.body;
+        const { message, history } = req.body;
 
         if (!message || typeof message !== 'string') {
             return res.status(400).json({ error: 'Message required' });
@@ -414,82 +473,17 @@ app.post('/api/chat', async (req, res) => {
         const prior = normalizeHistory(history);
         const userTurnsInHistory = prior.filter((m) => m.role === 'user').length;
 
-        let maxPrompts = MAX_USER_CHAT_PROMPTS;
-        let limitKind = 'public';
-        let holderStatus = null;
-
-        if (wallet != null && String(wallet).trim() !== '') {
-            const w = String(wallet).trim();
-            if (w.length < 32 || w.length > 52) {
-                return res.status(400).json({ error: 'invalid_wallet' });
-            }
-            holderStatus = await fetchAnalHolderStatus(w);
-            if (holderStatus.error) {
-                return res.status(502).json({ error: 'holder_check_failed', message: holderStatus.error });
-            }
-            maxPrompts = holderStatus.promptLimit;
-            limitKind = 'wallet';
-            if (maxPrompts === 0) {
-                return res.status(403).json({
-                    error: 'insufficient_anal',
-                    message:
-                        'Holder chat requires at least ' +
-                        ANAL_TIER1_MIN_UI.toLocaleString() +
-                        ' $ANAL. Tier: ' +
-                        ANAL_TIER1_MIN_UI.toLocaleString() +
-                        '–' +
-                        ANAL_TIER2_BOUND_UI.toLocaleString() +
-                        ' ANAL → ' +
-                        ANAL_TIER1_PROMPTS +
-                        ' prompts; above ' +
-                        ANAL_TIER2_BOUND_UI.toLocaleString() +
-                        ' ANAL → ' +
-                        ANAL_TIER2_PROMPTS +
-                        ' prompts.',
-                    minAnalForChatUi: ANAL_TIER1_MIN_UI,
-                });
-            }
-        }
-
-        if (userTurnsInHistory >= maxPrompts) {
+        if (userTurnsInHistory >= MAX_USER_CHAT_PROMPTS) {
             return res.status(429).json({
                 error: 'chat_limit',
-                message:
-                    limitKind === 'wallet'
-                        ? 'Holder chat limit reached (' +
-                          maxPrompts +
-                          ' user messages this session for your balance tier). Refresh the page to reset. DYOR. 🕳️⚡'
-                        : CHAT_LIMIT_MESSAGE,
-                limit: maxPrompts,
-                limitKind,
+                message: CHAT_LIMIT_MESSAGE,
+                limit: MAX_USER_CHAT_PROMPTS,
             });
         }
 
-        let systemContent = SYSTEM_PROMPT;
-        if (limitKind === 'wallet' && holderStatus && !holderStatus.error) {
-            systemContent =
-                SYSTEM_PROMPT +
-                '\n\n' +
-                HOLDER_RESEARCH_APPEND +
-                '\n\nCONNECTED_WALLET_CONTEXT\n' +
-                '- Address: ' +
-                String(wallet).trim() +
-                '\n' +
-                '- Verified ~' +
-                (holderStatus.uiAmount != null ? String(holderStatus.uiAmount) : '?') +
-                ' ANAL | tier ' +
-                holderStatus.tier +
-                ' | ' +
-                holderStatus.promptLimit +
-                ' user messages per refresh\n';
-        }
+        const kimiMaxTokens = Math.min(2048, parseInt(process.env.KIMI_MAX_TOKENS || '512', 10) || 512);
 
-        const kimiMaxTokens =
-            limitKind === 'wallet'
-                ? Math.min(4096, parseInt(process.env.KIMI_MAX_TOKENS_HOLDER || '1536', 10) || 1536)
-                : Math.min(2048, parseInt(process.env.KIMI_MAX_TOKENS_PUBLIC || '512', 10) || 512);
-
-        const messages = [{ role: 'system', content: systemContent }, ...prior, { role: 'user', content: userMessage }];
+        const messages = [{ role: 'system', content: SYSTEM_PROMPT }, ...prior, { role: 'user', content: userMessage }];
 
         const response = await fetch(KIMI_API_URL, {
             method: 'POST',
@@ -511,9 +505,8 @@ app.post('/api/chat', async (req, res) => {
             res.json({
                 response: data.choices[0].message.content,
                 timestamp: new Date().toISOString(),
-                promptRemaining: Math.max(0, maxPrompts - userTurnsInHistory - 1),
-                promptLimit: maxPrompts,
-                limitKind,
+                promptRemaining: Math.max(0, MAX_USER_CHAT_PROMPTS - userTurnsInHistory - 1),
+                promptLimit: MAX_USER_CHAT_PROMPTS,
             });
         } else {
             res.status(500).json({ error: 'Invalid AI response', details: data });

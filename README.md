@@ -4,8 +4,8 @@ Monorepo for **$ANAL** / **Anal by lana.ai**: static site plus **one backend** (
 
 | Directory | Role |
 |-----------|------|
-| `website/` | Static site. **`lana-talk.html`** — wallet connect; Helius verifies ANAL (≥42,069 for access; tiered Kimi prompts). |
-| `api/` | **Production backend** — Express app: Helius proxy routes + `POST /api/chat` (Kimi). Deploy this to Railway. |
+| `website/` | **`lana-talk.html`** — wallet connect; ≥42,069 ANAL unlocks **read-only Helius JSON-RPC** UI + quick queries (no Kimi). |
+| `api/` | Express: Helius proxies, **`POST /api/helius/rpc`** (allowlisted read-only methods + holder gate), `POST /api/chat` (Kimi, home page). |
 | `helius-proxy/`, `ai-agent/` | Legacy split (optional reference); behavior lives in `api/`. |
 
 ## Railway (one project, one service)
@@ -14,22 +14,20 @@ Monorepo for **$ANAL** / **Anal by lana.ai**: static site plus **one backend** (
 2. **Variables** (same service):
    - `HELIUS_API_KEY` — required  
    - `KIMI_API_KEY` — required  
-   - Optional: `TOKEN_MINT`, `KIMI_TEMPERATURE`, `ALLOWED_ORIGINS`, `CORS_EXTRA_ORIGINS` (merged with `ALLOWED_ORIGINS` for extra hosts, e.g. `https://analbylana.xyz,https://www.analbylana.xyz`), `HELIUS_FETCH_TIMEOUT_MS` (default `12000` — avoids Railway **502** / fake “CORS” when Helius is slow), `MAX_USER_CHAT_PROMPTS` (default `5` for **no** `wallet` on `/api/chat`), `CHAT_LIMIT_MESSAGE`. **Holder chat** (body includes `wallet`): Helius checks ANAL balance — default **≥ 42,069** ANAL → **10** prompts; **> 1,000,000** ANAL → **20** prompts. Tune with `ANAL_TIER1_MIN_UI`, `ANAL_TIER2_BOUND_UI`, `ANAL_TIER1_PROMPTS`, `ANAL_TIER2_PROMPTS`. For `ALLOWED_ORIGINS`, use comma-separated origins (newlines OK). Add `https://anondevv69.github.io` for GitHub Pages testing. If both `ALLOWED_ORIGINS` and `CORS_EXTRA_ORIGINS` are empty, all origins are allowed (dev only).
+   - Optional: `TOKEN_MINT`, `KIMI_TEMPERATURE`, `ALLOWED_ORIGINS`, `CORS_EXTRA_ORIGINS`, `HELIUS_FETCH_TIMEOUT_MS` (default `12000`), `MAX_USER_CHAT_PROMPTS`, `CHAT_LIMIT_MESSAGE`, `KIMI_MAX_TOKENS` (default `512` for **`/api/chat`** on the home page). **Holder gate** (`/api/holder/anal`, **`POST /api/helius/rpc`**): same ANAL thresholds — `ANAL_TIER1_MIN_UI`, `ANAL_TIER2_BOUND_UI`, `ANAL_TIER1_PROMPTS`, `ANAL_TIER2_PROMPTS` still shape `promptLimit` / `tier` on the holder status object (`eligibleForChat` = ≥ min ANAL). For `ALLOWED_ORIGINS` / `CORS_EXTRA_ORIGINS`, see above. If both origin vars are empty, all origins are allowed (dev only).
 3. Deploy. Copy the public **`*.up.railway.app` URL** from Railway into **`website/index.html`** and **`website/lana-talk.html`** as **`CONFIG.API_URL`** (same URL for chat, holder verify, and on-chain helpers). Railway may assign a new hostname (e.g. after recreating the service) — update both files if the API URL changes or the site will call a dead host and show false “CORS” errors.
 
 No `SERVICE` build arg — removed.
 
 ## Chat behavior
 
-On-chain intents hit `/api/supply`, `/api/holders`, etc. on **the same host**; everything else goes to `POST /api/chat`. Persona: DYOR, internal agent for stack questions, no keys in the browser.
+Home page: on-chain keywords hit `/api/supply`, `/api/holders`, etc.; other messages go to **`POST /api/chat`** (Kimi, AnalX persona). No `wallet` field — **5** turns per refresh (`MAX_USER_CHAT_PROMPTS`).
 
-**Holder chat** (JSON body includes `wallet`): appends `HOLDER_RESEARCH_APPEND` to the system prompt and raises Kimi `max_tokens` (default **1536**, env `KIMI_MAX_TOKENS_HOLDER`; public chat uses `KIMI_MAX_TOKENS_PUBLIC`, default **512**).
+## Helius holder explorer (`lana-talk.html`)
 
-**Extra Helius proxies (read-only, same API key):**
+No Kimi. After wallet verification, users call **`POST /api/helius/rpc`** with `{ "wallet", "method", "params" }` — methods must be in `api/helius-rpc-allowlist.js` (read-only RPC/DAS only). **`GET /api/helius/allowed-methods`** lists them.
 
-- `GET /api/wallet/:address/signatures?limit=…` — `getSignaturesForAddress`
-- `GET /api/tx/:signature` — `getTransaction` (jsonParsed)
-- `POST /api/das/assets-by-owner` — JSON `{ "ownerAddress": "…", "limit": 100 }` — DAS `getAssetsByOwner` (if your Helius plan supports it)
+**Other read-only shortcuts:** `GET /api/wallet/:address/signatures`, `GET /api/tx/:signature`, `POST /api/das/assets-by-owner`.
 
 ## Custom domain (`analbylana.xyz`)
 
