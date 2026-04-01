@@ -114,7 +114,7 @@
         }
         .links a { color: var(--primary); font-weight: 600; }
         .fine { font-size: 0.8rem; color: var(--foreground-tertiary); margin-top: 1rem; }
-        .chat-input-row { display: flex; gap: 0.5rem; }
+        .chat-input-row { display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; }
         #rpc-params {
             width: 100%;
             min-height: 100px;
@@ -158,7 +158,7 @@
             Connect a Solana wallet. <strong>Helius</strong> verifies your <strong>$ANAL</strong> balance (mint
             <span style="font-family:'IBM Plex Mono',monospace;font-size:0.85rem;">95DJix…85DKvHK</span>).
             You need <strong>at least 42,069</strong> ANAL to unlock read-only RPC/DAS calls through this app (same tier rules as before: higher balance = higher tier label — used for access only here, not AI).
-            Run <strong>JSON-RPC</strong> methods from the <a class="links" href="https://www.helius.dev/docs/api-reference" target="_blank" rel="noopener noreferrer">Helius Solana API</a> (see also <a class="links" href="https://www.helius.dev/docs/llms.txt" target="_blank" rel="noopener noreferrer">docs index</a>). No Kimi on this page — raw chain data only. DYOR.
+            Run <strong>JSON-RPC</strong> from the <a class="links" href="https://www.helius.dev/docs/api-reference" target="_blank" rel="noopener noreferrer">Helius Solana API</a>, plus <a class="links" href="https://www.helius.dev/docs/api-reference/enhanced-transactions/overview" target="_blank" rel="noopener noreferrer">Enhanced Transactions</a> (human-readable swaps, transfers, NFT events — proxied through this app). See <a class="links" href="https://www.helius.dev/docs/llms.txt" target="_blank" rel="noopener noreferrer">docs index</a>. No Kimi on this page. DYOR.
         </p>
 
         <div id="panel-connect" class="card">
@@ -215,10 +215,15 @@
                     <button type="button" class="tool-btn" data-endpoint="/api/token">Token metadata (DAS getAsset)</button>
                     <button type="button" class="tool-btn" data-endpoint="/api/transactions">Recent mint signatures</button>
                 </div>
-                <p style="font-size:0.8rem;color:var(--foreground-tertiary);margin:1rem 0 0.5rem;"><strong>Decode any transaction</strong></p>
+                <p style="font-size:0.8rem;color:var(--foreground-tertiary);margin:1rem 0 0.5rem;"><strong>Enhanced (parsed) — same API as <a class="links" href="https://www.helius.dev/docs/api-reference/enhanced-transactions/overview" target="_blank" rel="noopener noreferrer">Helius docs</a></strong></p>
+                <div class="tools-grid" style="margin-bottom:1rem;">
+                    <button type="button" class="tool-btn" id="btn-enhanced-history">My parsed activity (recent)</button>
+                </div>
+                <p style="font-size:0.8rem;color:var(--foreground-tertiary);margin:0 0 0.5rem;"><strong>Decode any transaction</strong></p>
                 <div class="chat-input-row" style="margin-bottom:0.5rem;">
                     <input type="text" id="tx-sig-input" placeholder="Paste transaction signature (base58)…" autocomplete="off" style="font-size:0.85rem;" />
-                    <button type="button" class="btn btn-secondary" id="btn-tx-decode">Decode</button>
+                    <button type="button" class="btn btn-secondary" id="btn-tx-decode">RPC (jsonParsed)</button>
+                    <button type="button" class="btn btn-secondary" id="btn-tx-enhanced">Enhanced</button>
                 </div>
                 <pre class="out hidden" id="tool-output"></pre>
             </div>
@@ -514,7 +519,7 @@
             }
         });
 
-        document.getElementById('btn-tx-decode').addEventListener('click', async function () {
+        function decodeTxRpc() {
             const sig = document.getElementById('tx-sig-input').value.trim();
             if (!sig || sig.length < 80) {
                 toolOutput.classList.remove('hidden');
@@ -523,8 +528,74 @@
             }
             toolOutput.classList.remove('hidden');
             toolOutput.textContent = 'Loading transaction…';
+            return fetch(CONFIG.API_URL + '/api/tx/' + encodeURIComponent(sig))
+                .then(function (r) {
+                    return r.text();
+                })
+                .then(function (text) {
+                    let json;
+                    try {
+                        json = JSON.parse(text);
+                    } catch (_) {
+                        toolOutput.textContent = text;
+                        return;
+                    }
+                    toolOutput.textContent = JSON.stringify(json, null, 2);
+                })
+                .catch(function (e) {
+                    toolOutput.textContent = String(e);
+                });
+        }
+
+        document.getElementById('btn-tx-decode').addEventListener('click', decodeTxRpc);
+
+        document.getElementById('btn-tx-enhanced').addEventListener('click', async function () {
+            if (!publicKey) return;
+            const sig = document.getElementById('tx-sig-input').value.trim();
+            if (!sig || sig.length < 80) {
+                toolOutput.classList.remove('hidden');
+                toolOutput.textContent = 'Paste a full Solana transaction signature (base58, ~88 chars).';
+                return;
+            }
+            toolOutput.classList.remove('hidden');
+            toolOutput.textContent = 'Loading Helius Enhanced parse…';
             try {
-                const r = await fetch(CONFIG.API_URL + '/api/tx/' + encodeURIComponent(sig));
+                const r = await fetch(CONFIG.API_URL + '/api/helius/enhanced/transactions', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        wallet: publicKey,
+                        transactions: [sig],
+                    }),
+                    signal: abortAfter(60000),
+                });
+                const text = await r.text();
+                let json;
+                try {
+                    json = JSON.parse(text);
+                } catch (_) {
+                    toolOutput.textContent = text;
+                    return;
+                }
+                toolOutput.textContent = JSON.stringify(json, null, 2);
+            } catch (e) {
+                toolOutput.textContent = String(e);
+            }
+        });
+
+        document.getElementById('btn-enhanced-history').addEventListener('click', async function () {
+            if (!publicKey) return;
+            toolOutput.classList.remove('hidden');
+            toolOutput.textContent = 'Loading parsed history…';
+            try {
+                const u =
+                    CONFIG.API_URL +
+                    '/api/helius/enhanced/addresses/' +
+                    encodeURIComponent(publicKey) +
+                    '/transactions?wallet=' +
+                    encodeURIComponent(publicKey) +
+                    '&limit=25';
+                const r = await fetch(u, { signal: abortAfter(60000) });
                 const text = await r.text();
                 let json;
                 try {

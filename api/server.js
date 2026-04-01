@@ -176,6 +176,71 @@ async function fetchAnalHolderStatus(walletAddress) {
     };
 }
 
+/** Same ANAL gate as JSON-RPC proxy — `wallet` is the connected pubkey from the client */
+async function gateHolderWallet(wallet) {
+    if (!wallet || typeof wallet !== 'string') {
+        return { ok: false, status: 400, body: { error: 'wallet required (connected holder address)' } };
+    }
+    const w = wallet.trim();
+    if (w.length < 32 || w.length > 52) {
+        return { ok: false, status: 400, body: { error: 'invalid_wallet' } };
+    }
+    const st = await fetchAnalHolderStatus(w);
+    if (st.error) {
+        return { ok: false, status: 502, body: { error: st.error } };
+    }
+    if (!st.eligibleForChat) {
+        return {
+            ok: false,
+            status: 403,
+            body: { error: 'insufficient_anal', minAnalForChatUi: ANAL_TIER1_MIN_UI },
+        };
+    }
+    return { ok: true, wallet: w };
+}
+
+/** Helius Enhanced Transactions REST — https://www.helius.dev/docs/api-reference/enhanced-transactions/overview */
+const HELIUS_ENHANCED_ORIGIN = 'https://api-mainnet.helius-rpc.com';
+
+function heliusEnhancedUrl(path, extraQuery = {}) {
+    const p = path.startsWith('/') ? path.slice(1) : path;
+    const u = new URL(p, HELIUS_ENHANCED_ORIGIN + '/');
+    u.searchParams.set('api-key', HELIUS_API_KEY);
+    for (const [k, v] of Object.entries(extraQuery)) {
+        if (v !== undefined && v !== null && v !== '') {
+            u.searchParams.set(k, String(v));
+        }
+    }
+    return u;
+}
+
+async function heliusEnhancedFetch(urlObj, init = {}) {
+    const ctrl = new AbortController();
+    const tid = setTimeout(() => ctrl.abort(), HELIUS_FETCH_TIMEOUT_MS);
+    try {
+        const response = await fetch(urlObj.toString(), { ...init, signal: ctrl.signal });
+        const text = await response.text();
+        let json;
+        try {
+            json = JSON.parse(text);
+        } catch (_) {
+            return {
+                kind: 'bad_json',
+                status: response.status,
+                text: text.slice(0, 2000),
+            };
+        }
+        return { kind: 'json', response, json };
+    } catch (e) {
+        if (e.name === 'AbortError') {
+            return { kind: 'timeout' };
+        }
+        throw e;
+    } finally {
+        clearTimeout(tid);
+    }
+}
+
 function normalizeHistory(raw) {
     if (!Array.isArray(raw)) return [];
     const out = [];
@@ -403,25 +468,101 @@ app.get('/api/helius/allowed-methods', (req, res) => {
     res.json([...READ_ONLY_RPC_METHODS].sort());
 });
 
+/** POST body: { wallet, transactions: string[], commitment?: 'finalized'|'confirmed' } — max 100 sigs */
+app.post('/api/helius/enhanced/transactions', async (req, res) => {
+    try {
+        const { wallet, transactions, commitment } = req.body || {};
+        const g = await gateHolderWallet(wallet);
+        if (!g.ok) {
+            return res.status(g.status).json(g.body);
+        }
+        if (!Array.isArray(transactions) || transactions.length === 0) {
+            return res.status(400).json({
+                error: 'transactions required',
+                hint: 'Non-empty array of transaction signatures (max 100).',
+            });
+        }
+        if (transactions.length > 100) {
+            return res.status(400).json({ error: 'max 100 transactions per request' });
+        }
+        for (const s of transactions) {
+            if (typeof s !== 'string' || s.length < 80 || s.length > 128) {
+                return res.status(400).json({ error: 'invalid signature in transactions array' });
+            }
+        }
+        const body = { transactions };
+        if (commitment === 'finalized' || commitment === 'confirmed') {
+            body.commitment = commitment;
+        }
+        const url = heliusEnhancedUrl('v0/transactions');
+        const result = await heliusEnhancedFetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body),
+        });
+        if (result.kind === 'timeout') {
+            return res.status(504).json({ error: 'Helius Enhanced API timed out' });
+        }
+        if (result.kind === 'bad_json') {
+            return res.status(502).json({ error: 'Invalid JSON from Helius', details: result.text });
+        }
+        if (!result.response.ok) {
+            return res.status(result.response.status).json(result.json);
+        }
+        res.json(result.json);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+/**
+ * Query: wallet (required), optional before-signature, after-signature, type, source, limit, commitment
+ * Proxies GET /v0/addresses/{address}/transactions on Helius Enhanced API.
+ */
+app.get('/api/helius/enhanced/addresses/:address/transactions', async (req, res) => {
+    try {
+        const g = await gateHolderWallet(req.query.wallet);
+        if (!g.ok) {
+            return res.status(g.status).json(g.body);
+        }
+        const { address } = req.params;
+        if (!address || address.length < 32 || address.length > 52) {
+            return res.status(400).json({ error: 'invalid address' });
+        }
+        const q = { ...req.query };
+        delete q.wallet;
+        if (q.limit != null && q.limit !== '') {
+            const lim = parseInt(String(q.limit), 10);
+            if (!Number.isNaN(lim)) {
+                q.limit = String(Math.min(100, Math.max(1, lim)));
+            } else {
+                delete q.limit;
+            }
+        }
+        const path = `v0/addresses/${encodeURIComponent(address)}/transactions`;
+        const url = heliusEnhancedUrl(path, q);
+        const result = await heliusEnhancedFetch(url);
+        if (result.kind === 'timeout') {
+            return res.status(504).json({ error: 'Helius Enhanced API timed out' });
+        }
+        if (result.kind === 'bad_json') {
+            return res.status(502).json({ error: 'Invalid JSON from Helius', details: result.text });
+        }
+        if (!result.response.ok) {
+            return res.status(result.response.status).json(result.json);
+        }
+        res.json(result.json);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
 app.post('/api/helius/rpc', async (req, res) => {
     try {
         const { method, params, wallet } = req.body || {};
-        if (!wallet || typeof wallet !== 'string') {
-            return res.status(400).json({ error: 'wallet required (connected holder address)' });
-        }
-        const w = wallet.trim();
-        if (w.length < 32 || w.length > 52) {
-            return res.status(400).json({ error: 'invalid_wallet' });
-        }
-        const st = await fetchAnalHolderStatus(w);
-        if (st.error) {
-            return res.status(502).json({ error: st.error });
-        }
-        if (!st.eligibleForChat) {
-            return res.status(403).json({
-                error: 'insufficient_anal',
-                minAnalForChatUi: ANAL_TIER1_MIN_UI,
-            });
+        const g = await gateHolderWallet(wallet);
+        if (!g.ok) {
+            return res.status(g.status).json(g.body);
         }
         if (!method || typeof method !== 'string') {
             return res.status(400).json({ error: 'method required' });

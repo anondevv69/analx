@@ -5,7 +5,7 @@ Monorepo for **$ANAL** / **Anal by lana.ai**: static site plus **one backend** (
 | Directory | Role |
 |-----------|------|
 | `website/` | **`lana-talk.html`** — wallet connect; ≥42,069 ANAL unlocks **read-only Helius JSON-RPC** UI + quick queries (no Kimi). |
-| `api/` | Express: Helius proxies, **`POST /api/helius/rpc`** (allowlisted read-only methods + holder gate), `POST /api/chat` (Kimi, home page). |
+| `api/` | Express: **`POST /api/helius/rpc`**, **[Enhanced Transactions](https://www.helius.dev/docs/api-reference/enhanced-transactions/overview)** proxies (`/api/helius/enhanced/...`, holder gate), `POST /api/chat` (Kimi, home page). |
 | `helius-proxy/`, `ai-agent/` | Legacy split (optional reference); behavior lives in `api/`. |
 
 ## Railway (one project, one service)
@@ -25,7 +25,12 @@ Home page: on-chain keywords hit `/api/supply`, `/api/holders`, etc.; other mess
 
 ## Helius holder explorer (`lana-talk.html`)
 
-No Kimi. After wallet verification, users call **`POST /api/helius/rpc`** with `{ "wallet", "method", "params" }` — methods must be in `api/helius-rpc-allowlist.js` (read-only RPC/DAS only). **`GET /api/helius/allowed-methods`** lists them.
+No Kimi. After wallet verification:
+
+- **`POST /api/helius/rpc`** — `{ "wallet", "method", "params" }`; methods in `api/helius-rpc-allowlist.js`. **`GET /api/helius/allowed-methods`** lists them.
+- **Enhanced Transactions** (human-readable parses; [Helius docs](https://www.helius.dev/docs/api-reference/enhanced-transactions/overview)):
+  - **`POST /api/helius/enhanced/transactions`** — `{ "wallet", "transactions": [ "sig", ... ], "commitment"?: "finalized"|"confirmed" }` (max 100 sigs). Proxies `POST /v0/transactions` on `api-mainnet.helius-rpc.com`.
+  - **`GET /api/helius/enhanced/addresses/:address/transactions`** — requires **`?wallet=`** (connected holder). Forwards query params `before-signature`, `after-signature`, `type`, `source`, `limit`, `commitment` to Helius.
 
 **Other read-only shortcuts:** `GET /api/wallet/:address/signatures`, `GET /api/tx/:signature`, `POST /api/das/assets-by-owner`.
 
