@@ -661,7 +661,7 @@
     <section class="timeline" id="chat">
         <h2>Chat with AnalX Agent 🤖</h2>
         <div class="story-content" style="max-width: 600px; margin: 0 auto; padding: 1.5rem;">
-            <p style="font-size: 0.9rem; color: var(--foreground-muted); margin-bottom: 1rem;">Ask about $ANAL, lana.ai, or live on-chain facts (supply, holders, mint). Off-topic? I'll still bring it back to the goodest boy. DYOR — not financial advice.</p>
+            <p style="font-size: 0.9rem; color: var(--foreground-muted); margin-bottom: 1rem;">Ask about $ANAL, lana.ai, or live on-chain facts (supply, holders, mint). AI banter is limited to <strong>5 messages</strong> per refresh — for quick info, not endless threads. DYOR — not financial advice.</p>
             
             <div id="chat-messages" style="background: var(--background-secondary); border-radius: 0.5rem; padding: 1rem; min-height: 150px; max-height: 300px; overflow-y: auto; margin-bottom: 1rem; font-size: 0.9rem;">
                 <div style="margin-bottom: 0.75rem;">
@@ -685,8 +685,16 @@
             API_URL: 'https://analx-production.up.railway.app',
         };
 
-        /** Last ~10 turns for Kimi so follow-ups stay coherent */
+        /** Kimi thread only — max 5 user prompts per page session (Helius keywords unlimited) */
+        const MAX_KIMI_USER_PROMPTS = 5;
+        const CHAT_LIMIT_REPLY =
+            "Yo — this ain't for full-blown convos, just quick $ANAL / lana.ai banter and facts. Refresh the page to reset. DYOR. 🕳️⚡";
+
         let aiChatHistory = [];
+
+        function kimiUserPromptCount() {
+            return aiChatHistory.filter((m) => m.role === 'user').length;
+        }
 
         function addMessage(sender, text, isUser = false) {
             const div = document.createElement('div');
@@ -714,6 +722,11 @@
                     signal: AbortSignal.timeout(45000),
                 });
 
+                if (response.status === 429) {
+                    const data = await response.json().catch(() => ({}));
+                    return data.message || CHAT_LIMIT_REPLY;
+                }
+
                 if (!response.ok) {
                     const errorText = await response.text();
                     console.error('AI error:', errorText);
@@ -725,8 +738,8 @@
                 if (data.response) {
                     aiChatHistory.push({ role: 'user', content: message });
                     aiChatHistory.push({ role: 'assistant', content: data.response });
-                    if (aiChatHistory.length > 20) {
-                        aiChatHistory = aiChatHistory.slice(-20);
+                    if (aiChatHistory.length > 10) {
+                        aiChatHistory = aiChatHistory.slice(-10);
                     }
                     return data.response;
                 }
@@ -835,6 +848,10 @@
 
             if (wantsLockFacts(lower)) {
                 return LOCKED_FACTS;
+            }
+
+            if (kimiUserPromptCount() >= MAX_KIMI_USER_PROMPTS) {
+                return CHAT_LIMIT_REPLY;
             }
 
             const aiResponse = await getAIResponse(message);

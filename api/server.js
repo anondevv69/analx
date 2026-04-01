@@ -23,6 +23,15 @@ const KIMI_TEMPERATURE = (() => {
     return Math.min(1.5, Math.max(0.1, t));
 })();
 
+const MAX_USER_CHAT_PROMPTS = Math.min(
+    20,
+    Math.max(1, parseInt(process.env.MAX_USER_CHAT_PROMPTS || '5', 10) || 5)
+);
+
+const CHAT_LIMIT_MESSAGE =
+    process.env.CHAT_LIMIT_MESSAGE ||
+    "Yo — this ain't for full-blown convos, just quick $ANAL / lana.ai banter and facts. Refresh the page if you need a clean slate. DYOR. 🕳️⚡";
+
 const allowedOrigins = (process.env.ALLOWED_ORIGINS || '')
     .split(',')
     .map((s) => s.trim())
@@ -37,7 +46,7 @@ function normalizeHistory(raw) {
         if (!role) continue;
         out.push({ role, content: item.content.slice(0, 8000) });
     }
-    return out.slice(-20);
+    return out.slice(-10);
 }
 
 const app = express();
@@ -173,6 +182,14 @@ app.post('/api/chat', async (req, res) => {
         }
 
         const prior = normalizeHistory(history);
+        const userTurnsInHistory = prior.filter((m) => m.role === 'user').length;
+        if (userTurnsInHistory >= MAX_USER_CHAT_PROMPTS) {
+            return res.status(429).json({
+                error: 'chat_limit',
+                message: CHAT_LIMIT_MESSAGE,
+            });
+        }
+
         const messages = [{ role: 'system', content: SYSTEM_PROMPT }, ...prior, { role: 'user', content: userMessage }];
 
         const response = await fetch(KIMI_API_URL, {
