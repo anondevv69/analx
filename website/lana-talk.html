@@ -257,17 +257,40 @@
         }
 
         async function initHolderToolsGate() {
-            let s;
-            try {
-                const r = await fetch(CONFIG.API_URL + '/api/holder-tools/status');
-                s = await r.json();
-            } catch (_) {
-                return;
-            }
             const gate = document.getElementById('panel-gate');
             const connect = document.getElementById('panel-connect');
+            const gs = document.getElementById('gate-status');
             if (!gate || !connect) return;
-            if (!s.passwordRequired) {
+
+            let s;
+            try {
+                const r = await fetch(CONFIG.API_URL + '/api/holder-tools/status', {
+                    cache: 'no-store',
+                });
+                if (!r.ok) {
+                    throw new Error('HTTP ' + r.status);
+                }
+                s = await r.json();
+            } catch (e) {
+                /* CORS / network: previously we returned silently and the wallet panel stayed visible — looked like “password off” */
+                gate.classList.remove('hidden');
+                connect.classList.add('hidden');
+                if (gs) {
+                    gs.textContent =
+                        'Could not load tool settings (' +
+                        (e && e.message ? e.message : 'network error') +
+                        '). If this site is on analbylana.xyz, add https://analbylana.xyz and https://www.analbylana.xyz to Railway ALLOWED_ORIGINS or CORS_EXTRA_ORIGINS, redeploy the API, then refresh. (Browser blocks cross-origin calls until the API allows this origin.)';
+                    gs.classList.add('error');
+                }
+                return;
+            }
+
+            if (gs) {
+                gs.textContent = '';
+                gs.classList.remove('error');
+            }
+
+            if (!s || !s.passwordRequired) {
                 gate.classList.add('hidden');
                 connect.classList.remove('hidden');
                 return;
