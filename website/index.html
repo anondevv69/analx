@@ -723,9 +723,22 @@
             "Yo — this ain't for full-blown convos, just quick $ANAL / lana.ai banter and facts. Refresh the page to reset. DYOR. 🕳️⚡";
 
         const CHAT_UNAVAILABLE =
-            "Can't reach AnalX AI from here right now (network, CORS, or server). Try again in a moment. For instant on-chain facts without AI, type: supply, holders, mint, lock, or transactions. 🕳️⚡";
+            "Can't reach AnalX AI from here right now (network, CORS, or server). Try again in a moment. For instant on-chain facts without AI, type: supply, holders, mint, lock, or transactions. Technical details: open DevTools (F12) → Console. 🕳️⚡";
+
+        /** Same Railway host serves /api/supply and /api/chat — if this shows, the API is down or blocked */
+        const API_ENDPOINT_DOWN =
+            "Can't reach the AnalX API right now (the same server powers on-chain data and AI). Check Railway: Logs & Metrics for errors, redeploy, or confirm HELIUS_API_KEY / KIMI_API_KEY. DevTools (F12) → Console logs the HTTP status. 🕳️⚡";
 
         let aiChatHistory = [];
+
+        function logApiFailure(label, url, response, bodyPreview) {
+            console.error('[AnalX API]', label, {
+                url: url,
+                status: response ? response.status : '(no response)',
+                statusText: response ? response.statusText : '',
+                bodyPreview: bodyPreview ? String(bodyPreview).slice(0, 300) : '',
+            });
+        }
 
         function kimiUserPromptCount() {
             return aiChatHistory.filter((m) => m.role === 'user').length;
@@ -764,7 +777,7 @@
 
                 if (!response.ok) {
                     const errorText = await response.text();
-                    console.error('AI error:', errorText);
+                    logApiFailure('POST /api/chat', `${CONFIG.API_URL}/api/chat`, response, errorText);
                     throw new Error('AI error: ' + response.status);
                 }
 
@@ -780,17 +793,23 @@
                 }
                 return null;
             } catch (error) {
-                console.error('AI fetch error:', error);
+                console.error('[AnalX API] POST /api/chat failed', error);
                 return null;
             }
         }
 
         async function getHeliusData(endpoint) {
+            const url = `${CONFIG.API_URL}${endpoint}`;
             try {
-                const response = await fetch(`${CONFIG.API_URL}${endpoint}`);
-                if (!response.ok) throw new Error('Helius error');
+                const response = await fetch(url);
+                if (!response.ok) {
+                    const text = await response.text().catch(() => '');
+                    logApiFailure('GET ' + endpoint, url, response, text);
+                    return null;
+                }
                 return await response.json();
             } catch (e) {
+                console.error('[AnalX API] GET ' + endpoint + ' network error', url, e);
                 return null;
             }
         }
@@ -839,6 +858,7 @@
                         ' ANAL\n• Locked: 99,997,102 ANAL (10%) until 04/20/2069\n• Real-time from Solana blockchain ⚡'
                     );
                 }
+                return API_ENDPOINT_DOWN;
             }
 
             if (wantsHoldersOnChain(lower)) {
@@ -862,6 +882,7 @@
                     text += '\n⚡ On-chain data from Solana';
                     return text;
                 }
+                return API_ENDPOINT_DOWN;
             }
 
             if (wantsTokenMetaOnChain(lower, message)) {
@@ -869,6 +890,7 @@
                 if (data) {
                     return '📊 Token Metadata (via Helius):\n• Mint: 95DJix...85DKvHK\n• Chain: Solana\n• Integration: Active ⚡';
                 }
+                return API_ENDPOINT_DOWN;
             }
 
             if (wantsTxOnChain(lower)) {
@@ -883,6 +905,7 @@
                     text += '\n⚡ Solana mainnet';
                     return text;
                 }
+                return API_ENDPOINT_DOWN;
             }
 
             if (wantsLockFacts(lower)) {
