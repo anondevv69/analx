@@ -23,6 +23,14 @@ No `SERVICE` build arg — removed.
 
 On-chain intents hit `/api/supply`, `/api/holders`, etc. on **the same host**; everything else goes to `POST /api/chat`. Persona: DYOR, internal agent for stack questions, no keys in the browser.
 
+**Holder chat** (JSON body includes `wallet`): appends `HOLDER_RESEARCH_APPEND` to the system prompt and raises Kimi `max_tokens` (default **1536**, env `KIMI_MAX_TOKENS_HOLDER`; public chat uses `KIMI_MAX_TOKENS_PUBLIC`, default **512**).
+
+**Extra Helius proxies (read-only, same API key):**
+
+- `GET /api/wallet/:address/signatures?limit=…` — `getSignaturesForAddress`
+- `GET /api/tx/:signature` — `getTransaction` (jsonParsed)
+- `POST /api/das/assets-by-owner` — JSON `{ "ownerAddress": "…", "limit": 100 }` — DAS `getAssetsByOwner` (if your Helius plan supports it)
+
 ## Custom domain (`analbylana.xyz`)
 
 ### GitHub

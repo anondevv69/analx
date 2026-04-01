@@ -1,7 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const fetch = require('node-fetch');
-const { SYSTEM_PROMPT } = require('./prompt');
+const { SYSTEM_PROMPT, HOLDER_RESEARCH_APPEND } = require('./prompt');
 
 const HELIUS_API_KEY = process.env.HELIUS_API_KEY;
 const KIMI_API_KEY = process.env.KIMI_API_KEY;
@@ -322,6 +322,82 @@ app.get('/api/account/:address', async (req, res) => {
     }
 });
 
+app.get('/api/wallet/:address/signatures', async (req, res) => {
+    try {
+        const { address } = req.params;
+        const limit = Math.min(100, Math.max(1, parseInt(req.query.limit || '20', 10) || 20));
+        const data = await fetchHeliusRpcJson({
+            jsonrpc: '2.0',
+            id: 1,
+            method: 'getSignaturesForAddress',
+            params: [address, { limit }],
+        });
+        if (data.__timedOut) {
+            return res.status(504).json({ error: 'Helius timeout' });
+        }
+        if (data.error) {
+            return res.status(502).json({ error: data.error.message || 'RPC error' });
+        }
+        res.json(data.result || []);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.get('/api/tx/:signature', async (req, res) => {
+    try {
+        const sig = req.params.signature;
+        if (!sig || sig.length < 80) {
+            return res.status(400).json({ error: 'Invalid transaction signature' });
+        }
+        const data = await fetchHeliusRpcJson({
+            jsonrpc: '2.0',
+            id: 1,
+            method: 'getTransaction',
+            params: [sig, { encoding: 'jsonParsed', maxSupportedTransactionVersion: 0 }],
+        });
+        if (data.__timedOut) {
+            return res.status(504).json({ error: 'Helius timeout' });
+        }
+        if (data.error) {
+            return res.status(502).json({ error: data.error.message || 'RPC error' });
+        }
+        res.json(data.result !== undefined ? data.result : null);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.post('/api/das/assets-by-owner', async (req, res) => {
+    try {
+        const ownerAddress = req.body && req.body.ownerAddress;
+        if (!ownerAddress || typeof ownerAddress !== 'string') {
+            return res.status(400).json({ error: 'ownerAddress required in JSON body' });
+        }
+        const limit = Math.min(1000, Math.max(1, parseInt(req.body.limit || '100', 10) || 100));
+        const data = await fetchHeliusRpcJson({
+            jsonrpc: '2.0',
+            id: 1,
+            method: 'getAssetsByOwner',
+            params: {
+                ownerAddress: ownerAddress.trim(),
+                page: 1,
+                limit,
+                displayOptions: { showFungible: true, showNativeBalance: true },
+            },
+        });
+        if (data.__timedOut) {
+            return res.status(504).json({ error: 'Helius timeout' });
+        }
+        if (data.error) {
+            return res.status(502).json({ error: data.error.message || 'RPC error', details: data.error });
+        }
+        res.json(data.result !== undefined ? data.result : data);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
 app.post('/api/chat', async (req, res) => {
     try {
         const { message, history, wallet } = req.body;
@@ -340,17 +416,18 @@ app.post('/api/chat', async (req, res) => {
 
         let maxPrompts = MAX_USER_CHAT_PROMPTS;
         let limitKind = 'public';
+        let holderStatus = null;
 
         if (wallet != null && String(wallet).trim() !== '') {
             const w = String(wallet).trim();
             if (w.length < 32 || w.length > 52) {
                 return res.status(400).json({ error: 'invalid_wallet' });
             }
-            const status = await fetchAnalHolderStatus(w);
-            if (status.error) {
-                return res.status(502).json({ error: 'holder_check_failed', message: status.error });
+            holderStatus = await fetchAnalHolderStatus(w);
+            if (holderStatus.error) {
+                return res.status(502).json({ error: 'holder_check_failed', message: holderStatus.error });
             }
-            maxPrompts = status.promptLimit;
+            maxPrompts = holderStatus.promptLimit;
             limitKind = 'wallet';
             if (maxPrompts === 0) {
                 return res.status(403).json({
@@ -388,7 +465,31 @@ app.post('/api/chat', async (req, res) => {
             });
         }
 
-        const messages = [{ role: 'system', content: SYSTEM_PROMPT }, ...prior, { role: 'user', content: userMessage }];
+        let systemContent = SYSTEM_PROMPT;
+        if (limitKind === 'wallet' && holderStatus && !holderStatus.error) {
+            systemContent =
+                SYSTEM_PROMPT +
+                '\n\n' +
+                HOLDER_RESEARCH_APPEND +
+                '\n\nCONNECTED_WALLET_CONTEXT\n' +
+                '- Address: ' +
+                String(wallet).trim() +
+                '\n' +
+                '- Verified ~' +
+                (holderStatus.uiAmount != null ? String(holderStatus.uiAmount) : '?') +
+                ' ANAL | tier ' +
+                holderStatus.tier +
+                ' | ' +
+                holderStatus.promptLimit +
+                ' user messages per refresh\n';
+        }
+
+        const kimiMaxTokens =
+            limitKind === 'wallet'
+                ? Math.min(4096, parseInt(process.env.KIMI_MAX_TOKENS_HOLDER || '1536', 10) || 1536)
+                : Math.min(2048, parseInt(process.env.KIMI_MAX_TOKENS_PUBLIC || '512', 10) || 512);
+
+        const messages = [{ role: 'system', content: systemContent }, ...prior, { role: 'user', content: userMessage }];
 
         const response = await fetch(KIMI_API_URL, {
             method: 'POST',
@@ -400,7 +501,7 @@ app.post('/api/chat', async (req, res) => {
                 model: 'kimi-latest',
                 messages,
                 temperature: KIMI_TEMPERATURE,
-                max_tokens: 512,
+                max_tokens: kimiMaxTokens,
             }),
         });
 

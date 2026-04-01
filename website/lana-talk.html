@@ -184,6 +184,11 @@
             </div>
             <div class="card" id="panel-chat">
                 <h2>AnalX chat (Kimi)</h2>
+                <p style="font-size:0.85rem;color:var(--foreground-muted);margin-bottom:0.75rem;">
+                    Ask how Solana works, how to read explorers, what signatures mean, DeFi concepts, or $ANAL / lana.ai lore.
+                    Use the JSON buttons below, then <strong>paste</strong> interesting output here — AnalX can explain it.
+                    This isn’t the full lana.ai product, but it’s Helius-backed research + education. DYOR.
+                </p>
                 <p class="fine" id="prompt-budget" style="margin-bottom:0.75rem;"></p>
                 <div id="chat-messages"></div>
                 <div class="chat-input-row">
@@ -197,12 +202,23 @@
                     Fetches go through the AnalX API (your Helius key stays on the server).
                     Full API catalog: <a class="links" href="https://www.helius.dev/docs/api-reference" target="_blank" rel="noopener noreferrer">Helius docs</a>.
                 </p>
+                <p style="font-size:0.8rem;color:var(--foreground-tertiary);margin:0 0 0.5rem;"><strong>Your wallet</strong></p>
+                <div class="tools-grid" style="margin-bottom:1rem;">
+                    <button type="button" class="tool-btn" id="btn-my-sigs">My recent signatures</button>
+                    <button type="button" class="tool-btn" id="btn-my-das">My assets (DAS)</button>
+                    <button type="button" class="tool-btn" id="btn-my-accounts">Your ANAL token accounts</button>
+                </div>
+                <p style="font-size:0.8rem;color:var(--foreground-tertiary);margin:0 0 0.5rem;"><strong>$ANAL mint &amp; chain</strong></p>
                 <div class="tools-grid">
                     <button type="button" class="tool-btn" data-endpoint="/api/supply">Token supply</button>
                     <button type="button" class="tool-btn" data-endpoint="/api/holders">Largest holders</button>
                     <button type="button" class="tool-btn" data-endpoint="/api/token">Token metadata (DAS getAsset)</button>
                     <button type="button" class="tool-btn" data-endpoint="/api/transactions">Recent mint signatures</button>
-                    <button type="button" class="tool-btn" id="btn-my-accounts">Your ANAL token accounts</button>
+                </div>
+                <p style="font-size:0.8rem;color:var(--foreground-tertiary);margin:1rem 0 0.5rem;"><strong>Decode any transaction</strong></p>
+                <div class="chat-input-row" style="margin-bottom:0.5rem;">
+                    <input type="text" id="tx-sig-input" placeholder="Paste transaction signature (base58)…" autocomplete="off" style="font-size:0.85rem;" />
+                    <button type="button" class="btn btn-secondary" id="btn-tx-decode">Decode</button>
                 </div>
                 <pre class="out hidden" id="tool-output"></pre>
             </div>
@@ -378,7 +394,7 @@
             chatMessages.innerHTML = '';
             addChatLine(
                 'AnalX',
-                "Woof — you're verified. Ask about Solana, $ANAL, or lana.ai. DYOR. 🕳️⚡",
+                "Woof — verified. Ask about Solana (txs, wallets, SPL, staking, fees), paste JSON from the Helius buttons, or $ANAL / lana.ai. I can't sign txs here — read-only research. DYOR. 🕳️⚡",
                 false
             );
             panelTools.classList.remove('hidden');
@@ -495,6 +511,70 @@
             try {
                 const r = await fetch(CONFIG.API_URL + '/api/account/' + encodeURIComponent(publicKey));
                 const json = await r.json();
+                toolOutput.textContent = JSON.stringify(json, null, 2);
+            } catch (e) {
+                toolOutput.textContent = String(e);
+            }
+        });
+
+        document.getElementById('btn-my-sigs').addEventListener('click', async function () {
+            if (!publicKey) return;
+            toolOutput.classList.remove('hidden');
+            toolOutput.textContent = 'Loading signatures…';
+            try {
+                const r = await fetch(
+                    CONFIG.API_URL + '/api/wallet/' + encodeURIComponent(publicKey) + '/signatures?limit=25'
+                );
+                const json = await r.json();
+                toolOutput.textContent = JSON.stringify(json, null, 2);
+            } catch (e) {
+                toolOutput.textContent = String(e);
+            }
+        });
+
+        document.getElementById('btn-my-das').addEventListener('click', async function () {
+            if (!publicKey) return;
+            toolOutput.classList.remove('hidden');
+            toolOutput.textContent = 'Loading DAS assets…';
+            try {
+                const r = await fetch(CONFIG.API_URL + '/api/das/assets-by-owner', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ ownerAddress: publicKey, limit: 100 }),
+                });
+                const text = await r.text();
+                let json;
+                try {
+                    json = JSON.parse(text);
+                } catch (_) {
+                    toolOutput.textContent = text;
+                    return;
+                }
+                toolOutput.textContent = JSON.stringify(json, null, 2);
+            } catch (e) {
+                toolOutput.textContent = String(e);
+            }
+        });
+
+        document.getElementById('btn-tx-decode').addEventListener('click', async function () {
+            const sig = document.getElementById('tx-sig-input').value.trim();
+            if (!sig || sig.length < 80) {
+                toolOutput.classList.remove('hidden');
+                toolOutput.textContent = 'Paste a full Solana transaction signature (base58, ~88 chars).';
+                return;
+            }
+            toolOutput.classList.remove('hidden');
+            toolOutput.textContent = 'Loading transaction…';
+            try {
+                const r = await fetch(CONFIG.API_URL + '/api/tx/' + encodeURIComponent(sig));
+                const text = await r.text();
+                let json;
+                try {
+                    json = JSON.parse(text);
+                } catch (_) {
+                    toolOutput.textContent = text;
+                    return;
+                }
                 toolOutput.textContent = JSON.stringify(json, null, 2);
             } catch (e) {
                 toolOutput.textContent = String(e);
