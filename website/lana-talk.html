@@ -319,7 +319,7 @@
             <div class="card chat-card">
                 <h2>Chat</h2>
                 <p style="font-size:0.85rem;color:var(--foreground-muted);margin-bottom:0.75rem;">
-                    Ask in plain language, use <strong>Quick research</strong> below, or paste a <strong>Solscan</strong> link — the server pulls <strong>Helius</strong> data (and <strong>Jupiter</strong> 24h trending when relevant).
+                    Ask in plain language, or use <strong>Quick research</strong> — replies use <strong>Helius</strong> on-chain context for your wallet (and any address or mint you paste).
                 </p>
                 <details class="research-panel" open>
                     <summary>Quick research</summary>
@@ -337,19 +337,19 @@
                         </div>
                     </div>
                     <div class="research-actions" aria-label="Quick research actions">
-                        <button type="button" class="chip research-run" data-run="trending">24h trending</button>
                         <button type="button" class="chip research-run" data-run="my-wallet">My wallet</button>
-                        <button type="button" class="chip research-run" data-run="pumpfun">Pump.fun activity</button>
-                        <button type="button" class="chip research-run" data-run="wallet-dive">Research wallet</button>
-                        <button type="button" class="chip research-run" data-run="token-mint">Token mint</button>
-                        <button type="button" class="chip research-run" data-run="wallet-and-token">Wallet + token</button>
+                        <button type="button" class="chip research-run" data-run="recent-activity">Recent activity</button>
+                        <button type="button" class="chip research-run" data-run="pumpfun">Pump.fun sample</button>
+                        <button type="button" class="chip research-run" data-run="wallet-dive">Wallet (paste above)</button>
+                        <button type="button" class="chip research-run" data-run="token-mint">Token mint (paste above)</button>
+                        <button type="button" class="chip research-run" data-run="wallet-and-token">Wallet + mint</button>
                     </div>
                 </details>
                 <div id="chat-messages" class="chat-messages" aria-live="polite"></div>
                 <div class="chat-chips" aria-label="Starters">
-                    <button type="button" class="chip" data-prompt="Show me an example like trending tokens: top trending on Solana in the last 24 hours with symbol, name, USD price, and 24h change. Use a clear ranked list.">Trending tokens</button>
-                    <button type="button" class="chip" data-prompt="Analyze my connected wallet using the CONTEXT: summarize SOL balance, major tokens, and anything useful for DeFi or risk. Be concise.">Wallet analysis</button>
-                    <button type="button" class="chip" data-prompt="What on-chain information do you have about my wallet holdings and recent activity? What would you need to dig deeper?">On-chain snapshot</button>
+                    <button type="button" class="chip" data-prompt="Using CONTEXT for my connected wallet: summarize SOL balance, main tokens/NFTs, and recent transactions in plain language. Be concise.">Wallet overview</button>
+                    <button type="button" class="chip" data-prompt="Using CONTEXT: describe my recent on-chain activity — transfers, swaps, and programs involved (e.g. Jupiter, Pump.fun) — with rough timing if visible.">Recent activity</button>
+                    <button type="button" class="chip" data-prompt="What does AnalX do, and what data from CONTEXT can you use for this wallet? One short paragraph.">What can you do?</button>
                 </div>
                 <div class="chat-input-row">
                     <input type="text" id="chat-input" placeholder="Reply…" autocomplete="off" />
@@ -645,7 +645,7 @@
                 chatMessages.innerHTML = '';
                 aiHistory = [];
                 appendAssistantMarkdown(
-                    '**Wallet connected.** Ask about **trending tokens**, **holdings**, or anything Solana. **Anal chat** uses **Helius** on-chain context (and **Jupiter** 24h data when the server has a Jupiter key).'
+                    '**Wallet connected.** You are chatting with **AnalX** — **Anal chat** uses **Helius** on-chain context for **$ANAL** holders. Ask about **your wallet**, **a pasted address**, **a token mint**, or **Pump.fun**-style activity from the data we load.'
                 );
             }
             panelTools.classList.remove('hidden');
@@ -748,13 +748,13 @@
             const m = mEl ? mEl.value.trim() : '';
             let msg = '';
             switch (kind) {
-                case 'trending':
-                    msg =
-                        'Show top trending Solana tokens in the last 24 hours: a clear ranked list with symbol, name, USD price, and 24h change. Use Jupiter data from CONTEXT when present.';
-                    break;
                 case 'my-wallet':
                     msg =
                         'Analyze my connected wallet using CONTEXT: SOL balance, major tokens, recent activity summary, and concise risks.';
+                    break;
+                case 'recent-activity':
+                    msg =
+                        'Using CONTEXT for my connected wallet: summarize recent transactions — transfers, swaps, programs (e.g. Jupiter, Pump.fun), and rough timing. No market-wide trending data unless it appears in CONTEXT.';
                     break;
                 case 'pumpfun':
                     msg =
