@@ -22,6 +22,9 @@ AI-powered chat backend for $ANAL token website. The **AnalX system prompt** in 
 
 ```bash
 KIMI_API_KEY=your_kimi_api_key_here
+# Optional: Moonshot platform (sk- keys) — match URL + model to their docs
+# KIMI_API_URL=https://api.moonshot.ai/v1/chat/completions
+# KIMI_MODEL=kimi-k2.5
 PORT=3000
 # Optional: slightly higher = more varied lines (default 0.82)
 # KIMI_TEMPERATURE=0.82

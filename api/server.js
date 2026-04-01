@@ -7,19 +7,59 @@ const { resolveAnalysisTarget } = require('./helius-chat-utils');
 const { READ_ONLY_RPC_METHODS } = require('./helius-rpc-allowlist');
 
 const HELIUS_API_KEY = process.env.HELIUS_API_KEY;
-const KIMI_API_KEY = process.env.KIMI_API_KEY;
+const KIMI_API_KEY = (process.env.KIMI_API_KEY || '').trim();
 const JUPITER_API_KEY = (process.env.JUPITER_API_KEY || '').trim();
 const TOKEN_MINT = process.env.TOKEN_MINT || '95DJixZhoy898shqxoZy5riztdf95fTqLXBog85DKvHK';
-const KIMI_API_URL = 'https://api.kimi.com/v1/chat/completions';
+/** OpenAI-compatible chat completions URL. Kimi consumer vs Moonshot platform use different hosts — see README. */
+const KIMI_API_URL = (
+    process.env.KIMI_API_URL || 'https://api.kimi.com/v1/chat/completions'
+).trim();
+/** e.g. `kimi-latest` (api.kimi.com) or `kimi-k2.5` / `kimi-k2-turbo-preview` (api.moonshot.ai). */
+const KIMI_MODEL = (process.env.KIMI_MODEL || 'kimi-latest').trim();
+
+const XAI_API_KEY = (process.env.XAI_API_KEY || process.env.GROK_API_KEY || '').trim();
+const XAI_API_URL = (process.env.XAI_API_URL || 'https://api.x.ai/v1/chat/completions').trim();
+/** Override with a model id from https://docs.x.ai/docs/models (e.g. grok-3, grok-3-mini). */
+const XAI_MODEL = (process.env.XAI_MODEL || 'grok-3').trim();
+
+/**
+ * `kimi` = KIMI_* / Moonshot-compatible; `grok` = xAI.
+ * If `LLM_PROVIDER` is unset and only `XAI_API_KEY` is set (no `KIMI_API_KEY`), defaults to **grok** so Railway can run Grok-only without extra vars.
+ */
+const LLM_PROVIDER = (() => {
+    const p = (process.env.LLM_PROVIDER || '').trim().toLowerCase();
+    if (p) return p;
+    if (XAI_API_KEY && !KIMI_API_KEY) return 'grok';
+    return 'kimi';
+})();
+
+function getLlmEndpoint() {
+    if (LLM_PROVIDER === 'grok' || LLM_PROVIDER === 'xai') {
+        return { url: XAI_API_URL, key: XAI_API_KEY, model: XAI_MODEL };
+    }
+    return { url: KIMI_API_URL, key: KIMI_API_KEY, model: KIMI_MODEL };
+}
 
 if (!HELIUS_API_KEY) {
     console.error('FATAL: HELIUS_API_KEY is required.');
     process.exit(1);
 }
-if (!KIMI_API_KEY) {
-    console.error('FATAL: KIMI_API_KEY is required.');
+if (LLM_PROVIDER === 'grok' || LLM_PROVIDER === 'xai') {
+    if (!XAI_API_KEY) {
+        console.error('FATAL: LLM_PROVIDER=grok requires XAI_API_KEY or GROK_API_KEY.');
+        process.exit(1);
+    }
+} else if (!KIMI_API_KEY) {
+    console.error('FATAL: KIMI_API_KEY is required when LLM_PROVIDER=kimi (default).');
     process.exit(1);
 }
+
+console.log(
+    '[analx] LLM:',
+    LLM_PROVIDER === 'grok' || LLM_PROVIDER === 'xai' ? 'grok (xAI)' : 'kimi / Moonshot-compatible',
+    '· model:',
+    getLlmEndpoint().model
+);
 
 const KIMI_TEMPERATURE = (() => {
     const t = parseFloat(process.env.KIMI_TEMPERATURE || '0.82', 10);
@@ -267,7 +307,7 @@ async function parseKimiChatResponse(response) {
             ok: false,
             status: response.status,
             error: 'empty_body',
-            message: 'Kimi returned an empty response body.',
+            message: 'LLM returned an empty response body.',
         };
     }
     const first = trimmed[0];
@@ -277,7 +317,7 @@ async function parseKimiChatResponse(response) {
             status: response.status,
             error: 'non_json_body',
             message:
-                'Kimi API returned non-JSON (often an HTML error page). Check KIMI_API_KEY, quota, and https://api.kimi.com status.',
+                'LLM API returned non-JSON (often an HTML error page). Check LLM_PROVIDER, API keys (KIMI_* or XAI_*), URL/model env vars, quota, and provider status.',
             snippet: trimmed.slice(0, 400),
         };
     }
@@ -308,7 +348,7 @@ async function parseKimiChatResponse(response) {
     }
     if (data.error && !data.choices) {
         const msg =
-            typeof data.error === 'string' ? data.error : data.error.message || 'Kimi error in JSON body';
+            typeof data.error === 'string' ? data.error : data.error.message || 'LLM error in JSON body';
         return {
             ok: false,
             status: response.status,
@@ -318,6 +358,23 @@ async function parseKimiChatResponse(response) {
         };
     }
     return { ok: true, data };
+}
+
+async function postOpenAiCompatibleChat(messages, maxTokens) {
+    const ep = getLlmEndpoint();
+    return fetch(ep.url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${ep.key}`,
+        },
+        body: JSON.stringify({
+            model: ep.model,
+            messages,
+            temperature: KIMI_TEMPERATURE,
+            max_tokens: maxTokens,
+        }),
+    });
 }
 
 async function fetchJupiterTrending24h(limit) {
@@ -366,6 +423,30 @@ async function fetchEnhancedAddressHistory(address, limit) {
     if (r.kind === 'timeout' || r.kind === 'bad_json') return null;
     if (!r.response.ok) return null;
     return r.json;
+}
+
+/** Short prose + key numbers for Kimi — avoids echoing JSON-RPC shapes like `getBalance` / “(raw)”. */
+function formatNativeSolContext(bal) {
+    if (!bal) return '(unavailable)';
+    if (bal.__timedOut) return 'Timed out fetching native SOL balance.';
+    if (bal.error) {
+        const m =
+            bal.error.message ||
+            (typeof bal.error === 'string' ? bal.error : JSON.stringify(bal.error));
+        return 'Could not read native SOL: ' + String(m).slice(0, 220);
+    }
+    const lamports = bal.result;
+    if (lamports === undefined || lamports === null) {
+        return 'No lamports value in balance snapshot.';
+    }
+    let lp;
+    try {
+        lp = BigInt(String(lamports));
+    } catch (_) {
+        return String(JSON.stringify(bal)).slice(0, 800);
+    }
+    const sol = Number(lp) / 1e9;
+    return `Approx ${sol.toFixed(6)} SOL (native, ${lp.toString()} lamports).`;
 }
 
 async function fetchPumpFunProgramActivitySample() {
@@ -464,10 +545,7 @@ async function buildHeliusChatContext(sessionWallet, userMessage, holderStatus) 
     }
 
     const holderJson = st && !st.error ? JSON.stringify(st, null, 2).slice(0, 4000) : '{}';
-    const balStr =
-        bal && !bal.__timedOut && !bal.error
-            ? JSON.stringify(bal).slice(0, 2500)
-            : JSON.stringify(bal || {}).slice(0, 500);
+    const balStr = formatNativeSolContext(bal);
 
     return {
         contextBlock:
@@ -480,17 +558,18 @@ async function buildHeliusChatContext(sessionWallet, userMessage, holderStatus) 
             '\n(target_source: ' +
             source +
             ' — explicit = user pasted another address or Solscan URL; session = connected wallet)\n' +
-            '\n--- TARGET: getBalance ---\n' +
+            '\n--- Native SOL (read-only snapshot) ---\n' +
             balStr +
-            '\n\n--- TARGET: DAS getAssetsByOwner (truncated) ---\n' +
+            '\n\n--- Wallet assets (Helius DAS, truncated) ---\n' +
             dasPart +
-            '\n\n--- TARGET: Helius Enhanced · recent transactions (truncated) ---\n' +
+            '\n\n--- Recent transactions (Helius Enhanced API, truncated) ---\n' +
             enhancedPart +
             (trendingPart
-                ? '\n\n--- JUPITER TRENDING 24h (when user asked market/trend style) ---\n' + trendingPart
+                ? '\n\n--- Jupiter: trending 24h (when user asked market / trend style) ---\n' + trendingPart
                 : '') +
             (pumpPart
-                ? '\n\n--- PUMP.FUN PROGRAM · recent activity sample (signatures + enhanced) ---\n' + pumpPart
+                ? '\n\n--- Pump.fun program: recent activity sample (signatures + enhanced, truncated) ---\n' +
+                  pumpPart
                 : ''),
     };
 }
@@ -870,29 +949,6 @@ app.post('/api/helius/rpc', requireHolderToolsPassword, async (req, res) => {
     }
 });
 
-/** Jupiter 24h trending for holder UI — no Kimi; requires JUPITER_API_KEY on the server. */
-app.get('/api/holder/jupiter-trending-24h', requireHolderToolsPassword, async (req, res) => {
-    try {
-        const g = await gateHolderWallet(req.query.wallet);
-        if (!g.ok) {
-            return res.status(g.status).json(g.body);
-        }
-        const limit = Math.min(50, Math.max(1, parseInt(String(req.query.limit || '15'), 10) || 15));
-        const tr = await fetchJupiterTrending24h(limit);
-        if (!tr || !Array.isArray(tr)) {
-            return res.status(503).json({
-                error: 'jupiter_unavailable',
-                message: JUPITER_API_KEY
-                    ? 'Could not fetch Jupiter trending.'
-                    : 'Set JUPITER_API_KEY on the API server for Jupiter 24h trending.',
-            });
-        }
-        res.json({ tokens: tr });
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});
-
 /** Kimi + Helius/Jupiter CONTEXT — holder tier limits; requires X-Holder-Tools-Password when HOLDER_TOOLS_PASSWORD is set */
 app.post('/api/holder/helius-chat', requireHolderToolsPassword, async (req, res) => {
     try {
@@ -952,24 +1008,12 @@ app.post('/api/holder/helius-chat', requireHolderToolsPassword, async (req, res)
             { role: 'user', content: userMessage },
         ];
 
-        const response = await fetch(KIMI_API_URL, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${KIMI_API_KEY}`,
-            },
-            body: JSON.stringify({
-                model: 'kimi-latest',
-                messages,
-                temperature: KIMI_TEMPERATURE,
-                max_tokens: kimiMaxTokens,
-            }),
-        });
+        const response = await postOpenAiCompatibleChat(messages, kimiMaxTokens);
 
         const parsed = await parseKimiChatResponse(response);
         if (!parsed.ok) {
             console.error(
-                'Helius chat Kimi failure:',
+                'Helius chat LLM failure:',
                 parsed.status,
                 parsed.error,
                 parsed.snippet || parsed.message
@@ -1026,23 +1070,11 @@ app.post('/api/chat', async (req, res) => {
 
         const messages = [{ role: 'system', content: SYSTEM_PROMPT }, ...prior, { role: 'user', content: userMessage }];
 
-        const response = await fetch(KIMI_API_URL, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${KIMI_API_KEY}`,
-            },
-            body: JSON.stringify({
-                model: 'kimi-latest',
-                messages,
-                temperature: KIMI_TEMPERATURE,
-                max_tokens: kimiMaxTokens,
-            }),
-        });
+        const response = await postOpenAiCompatibleChat(messages, kimiMaxTokens);
 
         const parsed = await parseKimiChatResponse(response);
         if (!parsed.ok) {
-            console.error('Home chat Kimi failure:', parsed.status, parsed.error, parsed.snippet || parsed.message);
+            console.error('Home chat LLM failure:', parsed.status, parsed.error, parsed.snippet || parsed.message);
             return res.status(502).json({
                 error: 'kimi_unavailable',
                 message: parsed.message,

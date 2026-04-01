@@ -5,7 +5,10 @@ const fetch = require('node-fetch');
 const app = express();
 
 const KIMI_API_KEY = process.env.KIMI_API_KEY;
-const KIMI_API_URL = 'https://api.kimi.com/v1/chat/completions';
+const KIMI_API_URL = (
+    process.env.KIMI_API_URL || 'https://api.kimi.com/v1/chat/completions'
+).trim();
+const KIMI_MODEL = (process.env.KIMI_MODEL || 'kimi-latest').trim();
 
 if (!KIMI_API_KEY) {
     console.error('FATAL: KIMI_API_KEY environment variable is required.');
@@ -162,7 +165,7 @@ app.post('/api/chat', async (req, res) => {
                 Authorization: `Bearer ${KIMI_API_KEY}`,
             },
             body: JSON.stringify({
-                model: 'kimi-latest',
+                model: KIMI_MODEL,
                 messages,
                 temperature: KIMI_TEMPERATURE,
                 max_tokens: 512,
