@@ -25,16 +25,39 @@ On-chain intents hit `/api/supply`, `/api/holders`, etc. on **the same host**; e
 
 ## Custom domain (`analbylana.xyz`)
 
-1. **Push** this repo (includes `.github/workflows/pages.yml` and `website/CNAME`).
-2. On GitHub: **Settings → Pages → Build and deployment → Source:** **GitHub Actions** (pick the “Deploy site to GitHub Pages” workflow if prompted).
-3. **Settings → Pages → Custom domain:** enter `analbylana.xyz`, save, wait for DNS check, then enable **Enforce HTTPS** when available.
-4. At your **registrar** (where you bought the domain), add DNS per [GitHub’s custom domain docs](https://docs.github.com/en/pages/configuring-a-custom-domain-for-your-github-pages-site/managing-a-custom-domain-for-your-github-pages-site#configuring-an-apex-domain):
-   - **Apex** (`analbylana.xyz`): **A** records → `185.199.108.153`, `185.199.109.153`, `185.199.110.153`, `185.199.111.153`  
-   - **Optional `www`:** **CNAME** → `<your-username>.github.io` (e.g. `anondevv69.github.io`)
+### GitHub
 
-DNS can take up to an hour (sometimes longer). `website/CNAME` tells Pages which hostname to serve.
+1. **Settings → Pages → Source:** **GitHub Actions** (workflow “Deploy site to GitHub Pages” must run successfully at least once).
+2. **Settings → Pages → Custom domain:** add **`analbylana.xyz`**, Save.  
+   If you also want **`www.analbylana.xyz`**, add it under the same section (or tick the option to add the `www` variant — GitHub will show both as “alternate” names).
 
-**Railway API:** In your API service variables, set `ALLOWED_ORIGINS` to include `https://analbylana.xyz` (and `https://www.analbylana.xyz` if you use `www`), so the browser can call your API from that site.
+> Publishing from **GitHub Actions** means the `website/CNAME` file is **not** what proves the domain to GitHub — [GitHub ignores it for Actions](https://docs.github.com/en/pages/configuring-a-custom-domain-for-your-github-pages-site/managing-a-custom-domain-for-your-github-pages-site). The domain you type under **Settings → Pages** is what matters. **DNS must still point at GitHub** or you get `NotServedByPagesError`.
+
+### DNS at your registrar (this fixes “Domain does not resolve to the GitHub Pages server”)
+
+Create **all** of the following (remove old **A**/**AAAA** records that point somewhere else first — parking pages, old hosts, etc.):
+
+| Host / name | Type | Value |
+|-------------|------|--------|
+| `@` (or `analbylana.xyz`, apex) | **A** | `185.199.108.153` |
+| same | **A** | `185.199.109.153` |
+| same | **A** | `185.199.110.153` |
+| same | **A** | `185.199.111.153` |
+| `@` (optional IPv6) | **AAAA** | `2606:50c0:8000::153` |
+| same | **AAAA** | `2606:50c0:8001::153` |
+| same | **AAAA** | `2606:50c0:8002::153` |
+| same | **AAAA** | `2606:50c0:8003::153` |
+| `www` | **CNAME** | **`anondevv69.github.io`** (exactly; **no** `/analx` — [per GitHub](https://docs.github.com/en/pages/configuring-a-custom-domain-for-your-github-pages-site/managing-a-custom-domain-for-your-github-pages-site#configuring-a-subdomain)) |
+
+**Cloudflare:** set records to **DNS only** (grey cloud), not proxied — orange cloud often breaks GitHub Pages checks.
+
+**CAA:** if you use CAA records, ensure Let’s Encrypt is allowed, e.g. `0 issue "letsencrypt.org"` (see [HTTPS docs](https://docs.github.com/en/pages/getting-started-with-github-pages/securing-your-github-pages-site-with-https)).
+
+Check propagation: `dig analbylana.xyz +short` should eventually return the four **185.199.*** IPs. Wait up to 24–48 hours after changes, then in **Pages** click **Save** on the custom domain again to re-check.
+
+### Railway
+
+Set **`ALLOWED_ORIGINS`** to include `https://analbylana.xyz` and, if used, `https://www.analbylana.xyz`.
 
 ## Repository
 
