@@ -256,6 +256,70 @@ function normalizeHistory(raw) {
     return out.slice(-10);
 }
 
+/**
+ * Kimi may return HTML (gateway, auth, rate limit page) instead of JSON — do not use response.json() blindly.
+ */
+async function parseKimiChatResponse(response) {
+    const raw = await response.text();
+    const trimmed = raw.trim();
+    if (!trimmed) {
+        return {
+            ok: false,
+            status: response.status,
+            error: 'empty_body',
+            message: 'Kimi returned an empty response body.',
+        };
+    }
+    const first = trimmed[0];
+    if (first !== '{' && first !== '[') {
+        return {
+            ok: false,
+            status: response.status,
+            error: 'non_json_body',
+            message:
+                'Kimi API returned non-JSON (often an HTML error page). Check KIMI_API_KEY, quota, and https://api.kimi.com status.',
+            snippet: trimmed.slice(0, 400),
+        };
+    }
+    let data;
+    try {
+        data = JSON.parse(raw);
+    } catch (e) {
+        return {
+            ok: false,
+            status: response.status,
+            error: 'json_parse_error',
+            message: e.message || 'JSON parse failed',
+            snippet: trimmed.slice(0, 400),
+        };
+    }
+    if (!response.ok) {
+        const msg =
+            (data.error && (typeof data.error === 'string' ? data.error : data.error.message)) ||
+            data.message ||
+            `HTTP ${response.status}`;
+        return {
+            ok: false,
+            status: response.status,
+            error: 'kimi_http_error',
+            message: String(msg),
+            data,
+        };
+    }
+    if (data.error && !data.choices) {
+        const msg =
+            typeof data.error === 'string' ? data.error : data.error.message || 'Kimi error in JSON body';
+        return {
+            ok: false,
+            status: response.status,
+            error: 'kimi_api_error',
+            message: String(msg),
+            data,
+        };
+    }
+    return { ok: true, data };
+}
+
 async function fetchJupiterTrending24h(limit) {
     if (!JUPITER_API_KEY) return null;
     const ctrl = new AbortController();
@@ -879,7 +943,21 @@ app.post('/api/holder/helius-chat', requireHolderToolsPassword, async (req, res)
             }),
         });
 
-        const data = await response.json();
+        const parsed = await parseKimiChatResponse(response);
+        if (!parsed.ok) {
+            console.error(
+                'Helius chat Kimi failure:',
+                parsed.status,
+                parsed.error,
+                parsed.snippet || parsed.message
+            );
+            return res.status(502).json({
+                error: 'kimi_unavailable',
+                message: parsed.message,
+                detail: parsed.error,
+            });
+        }
+        const data = parsed.data;
 
         if (data.choices && data.choices[0]) {
             return res.json({
@@ -890,7 +968,7 @@ app.post('/api/holder/helius-chat', requireHolderToolsPassword, async (req, res)
                 tier: st.tier,
             });
         }
-        return res.status(500).json({ error: 'Invalid AI response', details: data });
+        return res.status(502).json({ error: 'invalid_ai_response', details: data });
     } catch (error) {
         console.error('Helius chat error:', error);
         res.status(500).json({ error: error.message });
@@ -939,7 +1017,16 @@ app.post('/api/chat', async (req, res) => {
             }),
         });
 
-        const data = await response.json();
+        const parsed = await parseKimiChatResponse(response);
+        if (!parsed.ok) {
+            console.error('Home chat Kimi failure:', parsed.status, parsed.error, parsed.snippet || parsed.message);
+            return res.status(502).json({
+                error: 'kimi_unavailable',
+                message: parsed.message,
+                detail: parsed.error,
+            });
+        }
+        const data = parsed.data;
 
         if (data.choices && data.choices[0]) {
             res.json({
@@ -949,7 +1036,7 @@ app.post('/api/chat', async (req, res) => {
                 promptLimit: MAX_USER_CHAT_PROMPTS,
             });
         } else {
-            res.status(500).json({ error: 'Invalid AI response', details: data });
+            res.status(502).json({ error: 'invalid_ai_response', details: data });
         }
     } catch (error) {
         console.error('Chat error:', error);

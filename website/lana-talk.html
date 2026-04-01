@@ -733,7 +733,13 @@
                     return;
                 }
                 if (!r.ok) {
-                    appendAssistantMarkdown(data.error || bodyText || 'Request failed');
+                    const errMsg =
+                        data.message ||
+                        (data.detail && data.error ? `${data.error}: ${data.detail}` : null) ||
+                        data.error ||
+                        bodyText ||
+                        'Request failed';
+                    appendAssistantMarkdown(errMsg);
                     aiHistory.pop();
                     return;
                 }
