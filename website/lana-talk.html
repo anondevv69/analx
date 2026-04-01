@@ -195,20 +195,57 @@
             font-family: inherit;
         }
         .chip:hover { border-color: var(--primary); color: var(--primary); }
-        #research-input {
-            width: 100%;
-            margin-bottom: 0.5rem;
-            background: #0a100e;
+        details.research-panel {
+            margin-bottom: 0.85rem;
+            padding: 0.75rem 0.85rem;
+            background: rgba(0,0,0,0.2);
             border: 1px solid var(--border);
             border-radius: 0.5rem;
-            padding: 0.6rem 0.75rem;
+        }
+        details.research-panel summary {
+            cursor: pointer;
+            font-size: 0.88rem;
+            font-weight: 600;
+            color: var(--foreground-muted);
+            list-style: none;
+        }
+        details.research-panel summary::-webkit-details-marker { display: none; }
+        details.research-panel summary::before {
+            content: '▸ ';
+            color: var(--primary);
+        }
+        details.research-panel[open] summary::before { content: '▾ '; }
+        .research-hint {
+            font-size: 0.78rem;
+            color: var(--foreground-tertiary);
+            margin: 0.5rem 0 0.65rem;
+            line-height: 1.45;
+        }
+        .research-fields { display: grid; gap: 0.55rem; margin-bottom: 0.65rem; }
+        .research-fields label {
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: var(--foreground-tertiary);
+            display: block;
+            margin-bottom: 0.25rem;
+        }
+        .research-fields input {
+            width: 100%;
+            background: #0a100e;
+            border: 1px solid var(--border);
+            border-radius: 0.45rem;
+            padding: 0.5rem 0.6rem;
             color: var(--foreground);
             font-family: 'IBM Plex Mono', monospace;
-            font-size: 0.82rem;
+            font-size: 0.78rem;
         }
-        .research-actions { margin-bottom: 0.5rem; }
-        .research-actions .btn { font-size: 0.82rem; padding: 0.45rem 0.9rem; }
-        .research-hint { font-size: 0.78rem; color: var(--foreground-tertiary); margin: 0 0 0.65rem; }
+        .research-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.4rem;
+        }
+        .research-actions .chip { font-size: 0.74rem; padding: 0.32rem 0.6rem; }
         #chat-input {
             flex: 1;
             min-width: 140px;
@@ -293,10 +330,9 @@
         <p class="lede">
             For verified <strong>$ANAL</strong> holders (mint
             <span style="font-family:'IBM Plex Mono',monospace;font-size:0.85rem;">95DJix…85DKvHK</span>,
-            <strong>≥42,069</strong> ANAL). <strong>Quick research</strong> hits Helius (and optional Jupiter) directly — no AI.
-            <strong>Chat</strong> uses <strong>Kimi</strong> plus the same live
+            <strong>≥42,069</strong> ANAL). Chat runs on the server: <strong>Kimi</strong> reads live
             <a class="links" href="https://www.helius.dev/docs" target="_blank" rel="noopener noreferrer">Helius</a>
-            data when it works. Not for signing transactions.
+            wallet data (and optional <strong>Jupiter</strong> trending when you ask). Use it for wallet analysis, market movers, and on-chain context — not for signing transactions.
             <a class="links" href="index.html#token">Token &amp; lock</a>. DYOR.
         </p>
 
@@ -331,33 +367,38 @@
                 <p class="fine" id="tier-line"></p>
                 <p class="fine" id="wallet-line"></p>
             </div>
-            <div class="card">
-                <h2>Quick research</h2>
-                <p class="research-hint">
-                    Paste a <strong>wallet</strong>, <strong>token mint</strong>, <strong>tx signature</strong>, or
-                    <a class="links" href="https://solscan.io" target="_blank" rel="noopener noreferrer">Solscan</a> link.
-                    Leave blank to use your connected wallet (where applicable). Results are raw API JSON — no LLM.
-                </p>
-                <input type="text" id="research-input" placeholder="Address, mint, tx signature, or Solscan URL…" autocomplete="off" />
-                <div class="research-actions">
-                    <button type="button" class="btn btn-secondary" id="btn-research-use-wallet">Use connected wallet</button>
-                </div>
-                <div class="chat-chips" aria-label="Helius quick actions">
-                    <button type="button" class="chip" data-research="balance" title="getBalance">SOL balance</button>
-                    <button type="button" class="chip" data-research="das" title="getAssetsByOwner">Wallet assets</button>
-                    <button type="button" class="chip" data-research="activity" title="Enhanced tx history">Recent activity</button>
-                    <button type="button" class="chip" data-research="token" title="getAsset">Token / mint</button>
-                    <button type="button" class="chip" data-research="tx" title="getTransaction">Parse tx</button>
-                    <button type="button" class="chip" data-research="trending" title="Jupiter 24h">24h trending</button>
-                </div>
-            </div>
             <div class="card chat-card">
                 <h2>Chat</h2>
                 <p style="font-size:0.85rem;color:var(--foreground-muted);margin-bottom:0.75rem;">
-                    Ask in plain language. When Kimi is available, the model uses <strong>Helius</strong> snapshots of your wallet (and <strong>Jupiter</strong> trending when you ask about movers / 24h trend). If chat fails, use <strong>Quick research</strong> above.
+                    Ask in plain language, use <strong>Quick research</strong> below, or paste a <strong>Solscan</strong> link — the server pulls <strong>Helius</strong> data (and <strong>Jupiter</strong> 24h trending when relevant).
                 </p>
+                <details class="research-panel" open>
+                    <summary>Quick research</summary>
+                    <p class="research-hint">
+                        Optional: paste any <strong>wallet</strong> address or <code style="font-size:0.75em;">solscan.io/account/…</code> link, and/or a <strong>token mint</strong>. Then tap a button — we send a structured prompt; the API runs Helius (+ Kimi). Not the same product as
+                        <a href="https://www.kimi.com/code/docs/en/more/third-party-agents.html" target="_blank" rel="noopener noreferrer" class="links">Kimi Code</a> in your IDE (different API path).
+                    </p>
+                    <div class="research-fields">
+                        <div>
+                            <label for="research-wallet">Wallet or Solscan URL</label>
+                            <input type="text" id="research-wallet" placeholder="e.g. FvHL… or https://solscan.io/account/…" autocomplete="off" spellcheck="false" />
+                        </div>
+                        <div>
+                            <label for="research-mint">Token mint</label>
+                            <input type="text" id="research-mint" placeholder="SPL mint address" autocomplete="off" spellcheck="false" />
+                        </div>
+                    </div>
+                    <div class="research-actions" aria-label="Quick research actions">
+                        <button type="button" class="chip research-run" data-run="trending">24h trending</button>
+                        <button type="button" class="chip research-run" data-run="my-wallet">My wallet</button>
+                        <button type="button" class="chip research-run" data-run="pumpfun">Pump.fun activity</button>
+                        <button type="button" class="chip research-run" data-run="wallet-dive">Research wallet</button>
+                        <button type="button" class="chip research-run" data-run="token-mint">Token mint</button>
+                        <button type="button" class="chip research-run" data-run="wallet-and-token">Wallet + token</button>
+                    </div>
+                </details>
                 <div id="chat-messages" class="chat-messages" aria-live="polite"></div>
-                <div class="chat-chips" aria-label="Chat starters (Kimi)">
+                <div class="chat-chips" aria-label="Starters">
                     <button type="button" class="chip" data-prompt="Show me an example like trending tokens: top trending on Solana in the last 24 hours with symbol, name, USD price, and 24h change. Use a clear ranked list.">Trending tokens</button>
                     <button type="button" class="chip" data-prompt="Analyze my connected wallet using the CONTEXT: summarize SOL balance, major tokens, and anything useful for DeFi or risk. Be concise.">Wallet analysis</button>
                     <button type="button" class="chip" data-prompt="What on-chain information do you have about my wallet holdings and recent activity? What would you need to dig deeper?">On-chain snapshot</button>
@@ -483,8 +524,6 @@
         const btnGateUnlock = document.getElementById('btn-gate-unlock');
         const gatePassword = document.getElementById('gate-password');
         const gateStatus = document.getElementById('gate-status');
-        const researchInput = document.getElementById('research-input');
-        const btnResearchUseWallet = document.getElementById('btn-research-use-wallet');
 
         let publicKey = null;
         let aiHistory = [];
@@ -578,319 +617,6 @@
             const c = new AbortController();
             setTimeout(function () { c.abort(); }, ms);
             return c.signal;
-        }
-
-        function parseResearchInput(raw) {
-            const t = (raw || '').trim();
-            if (!t) return null;
-            const solscan = t.match(/solscan\.io\/(?:account|token|tx)\/([1-9A-HJ-NP-Za-km-z]{32,128})/i);
-            if (solscan) return solscan[1];
-            const m = t.match(/[1-9A-HJ-NP-Za-km-z]{32,128}/);
-            return m ? m[0] : null;
-        }
-
-        function looksLikeSignature(s) {
-            return (
-                typeof s === 'string' &&
-                s.length >= 80 &&
-                s.length <= 128 &&
-                /^[1-9A-HJ-NP-Za-km-z]+$/.test(s)
-            );
-        }
-
-        function formatJupiterTrendingMarkdown(tokens) {
-            if (!Array.isArray(tokens) || !tokens.length) {
-                return '_No trending rows returned._';
-            }
-            let md =
-                '| Rank | Symbol | Name | USD price | 24h change |\n| --- | --- | --- | --- | --- |\n';
-            tokens.slice(0, 20).forEach(function (t, i) {
-                const sym = t.symbol || t.tokenSymbol || '—';
-                const name = String(t.name || t.tokenName || '—').slice(0, 36);
-                const usd =
-                    t.usdPrice != null
-                        ? Number(t.usdPrice).toLocaleString(undefined, { maximumFractionDigits: 8 })
-                        : t.price != null
-                          ? String(t.price)
-                          : '—';
-                let ch = '—';
-                if (t.stats24h && t.stats24h.priceChange != null) ch = String(t.stats24h.priceChange);
-                else if (t.priceChange24h != null) ch = String(t.priceChange24h);
-                md += '| ' + (i + 1) + ' | ' + sym + ' | ' + name + ' | ' + usd + ' | ' + ch + ' |\n';
-            });
-            md += '\n_Source: Jupiter toptrending/24h via your API. Not financial advice._';
-            return md;
-        }
-
-        async function runQuickResearch(kind) {
-            if (!publicKey) {
-                appendSystem('Connect a wallet first.');
-                return;
-            }
-            const parsed = parseResearchInput(researchInput ? researchInput.value : '');
-            const walletAddr = parsed || publicKey;
-
-            if (kind === 'trending') {
-                appendUser('Quick research · 24h trending (Jupiter)');
-                try {
-                    const r = await fetch(
-                        CONFIG.API_URL +
-                            '/api/holder/jupiter-trending-24h?wallet=' +
-                            encodeURIComponent(publicKey) +
-                            '&limit=15',
-                        { headers: authHeaders(), signal: abortAfter(60000) }
-                    );
-                    const text = await r.text();
-                    if (r.status === 401) {
-                        onHolderToolsUnauthorized();
-                        return;
-                    }
-                    let json;
-                    try {
-                        json = JSON.parse(text);
-                    } catch (_) {
-                        appendRpcJson('Jupiter', text);
-                        return;
-                    }
-                    if (!r.ok) {
-                        appendAssistantMarkdown(
-                            '**' + (json.error || 'Error') + '** — ' + (json.message || text)
-                        );
-                        return;
-                    }
-                    appendAssistantMarkdown(formatJupiterTrendingMarkdown(json.tokens));
-                    appendRpcJson('Raw JSON', json);
-                } catch (e) {
-                    appendRpcJson('Error', String(e));
-                }
-                return;
-            }
-
-            if (kind === 'token') {
-                if (!parsed) {
-                    appendSystem('Paste a token mint (or a Solscan token URL) for Token / mint info.');
-                    return;
-                }
-                appendUser('Quick research · getAsset · ' + parsed.slice(0, 8) + '…');
-                try {
-                    const r = await fetch(CONFIG.API_URL + '/api/helius/rpc', {
-                        method: 'POST',
-                        headers: authHeaders({ 'Content-Type': 'application/json' }),
-                        body: JSON.stringify({
-                            wallet: publicKey,
-                            method: 'getAsset',
-                            params: { id: parsed },
-                        }),
-                        signal: abortAfter(60000),
-                    });
-                    const text = await r.text();
-                    if (r.status === 401) {
-                        onHolderToolsUnauthorized();
-                        return;
-                    }
-                    let json;
-                    try {
-                        json = JSON.parse(text);
-                    } catch (_) {
-                        appendRpcJson('getAsset', text);
-                        return;
-                    }
-                    appendRpcJson('getAsset', json);
-                } catch (e) {
-                    appendRpcJson('Error', String(e));
-                }
-                return;
-            }
-
-            if (kind === 'tx') {
-                const sig = parsed || (researchInput && researchInput.value.trim());
-                if (!sig || !looksLikeSignature(sig)) {
-                    appendSystem('Paste a full transaction signature (or a Solscan transaction URL) for Parse tx.');
-                    return;
-                }
-                appendUser('Quick research · getTransaction · ' + sig.slice(0, 12) + '…');
-                try {
-                    const r = await fetch(CONFIG.API_URL + '/api/helius/rpc', {
-                        method: 'POST',
-                        headers: authHeaders({ 'Content-Type': 'application/json' }),
-                        body: JSON.stringify({
-                            wallet: publicKey,
-                            method: 'getTransaction',
-                            params: [sig, { encoding: 'jsonParsed', maxSupportedTransactionVersion: 0 }],
-                        }),
-                        signal: abortAfter(60000),
-                    });
-                    const text = await r.text();
-                    if (r.status === 401) {
-                        onHolderToolsUnauthorized();
-                        return;
-                    }
-                    let json;
-                    try {
-                        json = JSON.parse(text);
-                    } catch (_) {
-                        appendRpcJson('getTransaction', text);
-                        return;
-                    }
-                    appendRpcJson('getTransaction', json);
-                } catch (e) {
-                    appendRpcJson('Error', String(e));
-                }
-                return;
-            }
-
-            if (kind === 'balance') {
-                appendUser('Quick research · getBalance · ' + walletAddr.slice(0, 8) + '…');
-                try {
-                    const r = await fetch(CONFIG.API_URL + '/api/helius/rpc', {
-                        method: 'POST',
-                        headers: authHeaders({ 'Content-Type': 'application/json' }),
-                        body: JSON.stringify({
-                            wallet: publicKey,
-                            method: 'getBalance',
-                            params: [walletAddr],
-                        }),
-                        signal: abortAfter(60000),
-                    });
-                    const text = await r.text();
-                    if (r.status === 401) {
-                        onHolderToolsUnauthorized();
-                        return;
-                    }
-                    let json;
-                    try {
-                        json = JSON.parse(text);
-                    } catch (_) {
-                        appendRpcJson('getBalance', text);
-                        return;
-                    }
-                    const lam = json.result && json.result.value;
-                    if (lam != null) {
-                        const sol = Number(lam) / 1e9;
-                        appendAssistantMarkdown(
-                            '**SOL balance** · `' +
-                                walletAddr.slice(0, 4) +
-                                '…' +
-                                walletAddr.slice(-4) +
-                                '`\n\n' +
-                                String(lam).replace(/\B(?=(\d{3})+(?!\d))/g, ',') +
-                                ' lamports · **' +
-                                sol.toLocaleString(undefined, { maximumFractionDigits: 9 }) +
-                                ' SOL**'
-                        );
-                    }
-                    appendRpcJson('getBalance (raw)', json);
-                } catch (e) {
-                    appendRpcJson('Error', String(e));
-                }
-                return;
-            }
-
-            if (kind === 'das') {
-                appendUser('Quick research · DAS getAssetsByOwner · ' + walletAddr.slice(0, 8) + '…');
-                try {
-                    const r = await fetch(CONFIG.API_URL + '/api/das/assets-by-owner', {
-                        method: 'POST',
-                        headers: authHeaders({ 'Content-Type': 'application/json' }),
-                        body: JSON.stringify({ ownerAddress: walletAddr, limit: 100 }),
-                        signal: abortAfter(90000),
-                    });
-                    const text = await r.text();
-                    if (r.status === 401) {
-                        onHolderToolsUnauthorized();
-                        return;
-                    }
-                    let json;
-                    try {
-                        json = JSON.parse(text);
-                    } catch (_) {
-                        appendRpcJson('getAssetsByOwner', text);
-                        return;
-                    }
-                    if (!r.ok) {
-                        appendRpcJson('Error', json);
-                        return;
-                    }
-                    let summary = '';
-                    if (json.nativeBalance != null) {
-                        summary += '**Native balance (payload):** `' + JSON.stringify(json.nativeBalance).slice(0, 200) + '`\n\n';
-                    }
-                    if (Array.isArray(json.items) && json.items.length) {
-                        summary += '| Kind | Symbol | Mint (short) |\n| --- | --- | --- |\n';
-                        json.items.slice(0, 25).forEach(function (it) {
-                            const meta = it.content && it.content.metadata;
-                            const sym = (meta && meta.symbol) || (it.token_info && it.token_info.symbol) || '—';
-                            const mint = it.id || it.mint || '—';
-                            const short =
-                                mint.length > 12 ? mint.slice(0, 6) + '…' + mint.slice(-4) : mint;
-                            const k = it.interface || it.type || 'asset';
-                            summary += '| ' + k + ' | ' + sym + ' | `' + short + '` |\n';
-                        });
-                    }
-                    if (summary) appendAssistantMarkdown(summary);
-                    else appendAssistantMarkdown('_No `items` in DAS response — see raw JSON._');
-                    appendRpcJson('getAssetsByOwner (raw)', json);
-                } catch (e) {
-                    appendRpcJson('Error', String(e));
-                }
-                return;
-            }
-
-            if (kind === 'activity') {
-                appendUser('Quick research · Enhanced transactions · ' + walletAddr.slice(0, 8) + '…');
-                try {
-                    const url =
-                        CONFIG.API_URL +
-                        '/api/helius/enhanced/addresses/' +
-                        encodeURIComponent(walletAddr) +
-                        '/transactions?wallet=' +
-                        encodeURIComponent(publicKey) +
-                        '&limit=20';
-                    const r = await fetch(url, { headers: authHeaders(), signal: abortAfter(90000) });
-                    const text = await r.text();
-                    if (r.status === 401) {
-                        onHolderToolsUnauthorized();
-                        return;
-                    }
-                    let json;
-                    try {
-                        json = JSON.parse(text);
-                    } catch (_) {
-                        appendRpcJson('Enhanced txs', text);
-                        return;
-                    }
-                    if (!r.ok) {
-                        appendRpcJson('Error', json);
-                        return;
-                    }
-                    const arr = Array.isArray(json) ? json : [];
-                    if (arr.length) {
-                        let md = '| Time (UTC) | Type | Signature (short) |\n| --- | --- | --- |\n';
-                        arr.slice(0, 20).forEach(function (tx) {
-                            const t = tx.timestamp
-                                ? new Date(tx.timestamp * 1000).toISOString().slice(0, 19) + 'Z'
-                                : '—';
-                            const ty = tx.type || tx.description || '—';
-                            const sig = tx.signature || '—';
-                            const ss = sig.length > 14 ? sig.slice(0, 8) + '…' + sig.slice(-4) : sig;
-                            md +=
-                                '| ' +
-                                t +
-                                ' | ' +
-                                String(ty).slice(0, 48) +
-                                ' | `' +
-                                ss +
-                                '` |\n';
-                        });
-                        appendAssistantMarkdown(md);
-                    } else {
-                        appendAssistantMarkdown('_No enhanced transactions returned._');
-                    }
-                    appendRpcJson('Enhanced transactions (raw)', json);
-                } catch (e) {
-                    appendRpcJson('Error', String(e));
-                }
-            }
         }
 
         async function loadRpcMethodOptions() {
@@ -1167,6 +893,69 @@
             }
         });
 
+        function runResearchAction(kind) {
+            if (!publicKey) {
+                appendSystem('Connect a wallet first.');
+                return;
+            }
+            const wEl = document.getElementById('research-wallet');
+            const mEl = document.getElementById('research-mint');
+            const w = wEl ? wEl.value.trim() : '';
+            const m = mEl ? mEl.value.trim() : '';
+            let msg = '';
+            switch (kind) {
+                case 'trending':
+                    msg =
+                        'Show top trending Solana tokens in the last 24 hours: a clear ranked list with symbol, name, USD price, and 24h change. Use Jupiter data from CONTEXT when present.';
+                    break;
+                case 'my-wallet':
+                    msg =
+                        'Analyze my connected wallet using CONTEXT: SOL balance, major tokens, recent activity summary, and concise risks.';
+                    break;
+                case 'pumpfun':
+                    msg =
+                        'What does recent Pump.fun program activity look like in CONTEXT? Summarize which tokens show up, buy/sell flavor if visible, and stress that this is a sample feed — high risk, DYOR.';
+                    break;
+                case 'wallet-dive':
+                    if (!w) {
+                        appendSystem('Paste a wallet address or Solscan account URL in the first field.');
+                        return;
+                    }
+                    msg =
+                        'Tell me about this wallet — use the analysis target in CONTEXT for on-chain data:\n' +
+                        w +
+                        '\n\nGive: wallet overview, holdings, recent activity in plain language, observations, and risks.';
+                    break;
+                case 'token-mint':
+                    if (!m) {
+                        appendSystem('Paste a token mint in the second field.');
+                        return;
+                    }
+                    msg =
+                        'Analyze SPL token mint ' +
+                        m +
+                        ' using CONTEXT. Summarize metadata / signals you see and risks. Explorer: https://solscan.io/token/' +
+                        m;
+                    break;
+                case 'wallet-and-token':
+                    if (!w || !m) {
+                        appendSystem('Fill both wallet (or Solscan URL) and token mint for this action.');
+                        return;
+                    }
+                    msg =
+                        'Using CONTEXT: relate wallet ' +
+                        w +
+                        ' to token mint ' +
+                        m +
+                        ' — does this wallet hold or interact with this token? Recent activity? Notable risks?';
+                    break;
+                default:
+                    return;
+            }
+            if (chatInput) chatInput.value = msg;
+            sendHeliusChat();
+        }
+
         document.querySelectorAll('.chip[data-prompt]').forEach(function (chip) {
             chip.addEventListener('click', function () {
                 const p = chip.getAttribute('data-prompt');
@@ -1177,19 +966,11 @@
             });
         });
 
-        if (btnResearchUseWallet && researchInput) {
-            btnResearchUseWallet.addEventListener('click', function () {
-                if (publicKey) researchInput.value = publicKey;
+        document.querySelectorAll('.research-run').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                runResearchAction(btn.getAttribute('data-run'));
             });
-        }
-        if (panelTools) {
-            panelTools.addEventListener('click', function (e) {
-                const btn = e.target.closest('[data-research]');
-                if (!btn || !panelTools.contains(btn)) return;
-                const kind = btn.getAttribute('data-research');
-                if (kind) runQuickResearch(kind);
-            });
-        }
+        });
 
         if (chatSend && chatInput) {
             chatSend.addEventListener('click', sendHeliusChat);
