@@ -15,7 +15,7 @@ Monorepo for **$ANAL** / **Anal by lana.ai**: static site plus **one backend** (
    - `HELIUS_API_KEY` — required  
    - `KIMI_API_KEY` — required  
    - Optional: `TOKEN_MINT`, `KIMI_TEMPERATURE`, `ALLOWED_ORIGINS`, `CORS_EXTRA_ORIGINS` (merged with `ALLOWED_ORIGINS` for extra hosts, e.g. `https://analbylana.xyz,https://www.analbylana.xyz`), `HELIUS_FETCH_TIMEOUT_MS` (default `12000` — avoids Railway **502** / fake “CORS” when Helius is slow), `MAX_USER_CHAT_PROMPTS` (default `5` for **no** `wallet` on `/api/chat`), `CHAT_LIMIT_MESSAGE`. **Holder chat** (body includes `wallet`): Helius checks ANAL balance — default **≥ 42,069** ANAL → **10** prompts; **> 1,000,000** ANAL → **20** prompts. Tune with `ANAL_TIER1_MIN_UI`, `ANAL_TIER2_BOUND_UI`, `ANAL_TIER1_PROMPTS`, `ANAL_TIER2_PROMPTS`. For `ALLOWED_ORIGINS`, use comma-separated origins (newlines OK). Add `https://anondevv69.github.io` for GitHub Pages testing. If both `ALLOWED_ORIGINS` and `CORS_EXTRA_ORIGINS` are empty, all origins are allowed (dev only).
-3. Deploy. Copy the public `*.up.railway.app` URL into `website/index.html` as **`CONFIG.API_URL`** (one URL for both chat and on-chain helpers).
+3. Deploy. Copy the public **`*.up.railway.app` URL** from Railway into **`website/index.html`** and **`website/lana-talk.html`** as **`CONFIG.API_URL`** (same URL for chat, holder verify, and on-chain helpers). Railway may assign a new hostname (e.g. after recreating the service) — update both files if the API URL changes or the site will call a dead host and show false “CORS” errors.
 
 No `SERVICE` build arg — removed.
 
