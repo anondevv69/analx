@@ -870,6 +870,29 @@ app.post('/api/helius/rpc', requireHolderToolsPassword, async (req, res) => {
     }
 });
 
+/** Jupiter 24h trending for holder UI — no Kimi; requires JUPITER_API_KEY on the server. */
+app.get('/api/holder/jupiter-trending-24h', requireHolderToolsPassword, async (req, res) => {
+    try {
+        const g = await gateHolderWallet(req.query.wallet);
+        if (!g.ok) {
+            return res.status(g.status).json(g.body);
+        }
+        const limit = Math.min(50, Math.max(1, parseInt(String(req.query.limit || '15'), 10) || 15));
+        const tr = await fetchJupiterTrending24h(limit);
+        if (!tr || !Array.isArray(tr)) {
+            return res.status(503).json({
+                error: 'jupiter_unavailable',
+                message: JUPITER_API_KEY
+                    ? 'Could not fetch Jupiter trending.'
+                    : 'Set JUPITER_API_KEY on the API server for Jupiter 24h trending.',
+            });
+        }
+        res.json({ tokens: tr });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
 /** Kimi + Helius/Jupiter CONTEXT — holder tier limits; requires X-Holder-Tools-Password when HOLDER_TOOLS_PASSWORD is set */
 app.post('/api/holder/helius-chat', requireHolderToolsPassword, async (req, res) => {
     try {
