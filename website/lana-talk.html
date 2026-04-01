@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Helius explorer — $ANAL holder tools | Anal by lana.ai</title>
+    <title>Holder tools — $ANAL | Anal by lana.ai</title>
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Serif:wght@400;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -149,16 +149,17 @@
             <a href="index.html#story">Story</a>
             <a href="index.html#token">Token</a>
             <a href="index.html#chat">Chat</a>
-            <a href="lana-talk.html" aria-current="page">Helius</a>
+            <a href="lana-talk.html" aria-current="page">Tools</a>
         </nav>
     </header>
     <main>
-        <h1>Helius explorer</h1>
+        <h1>Holder tools</h1>
         <p class="lede">
-            Connect a Solana wallet. <strong>Helius</strong> verifies your <strong>$ANAL</strong> balance (mint
-            <span style="font-family:'IBM Plex Mono',monospace;font-size:0.85rem;">95DJix…85DKvHK</span>).
-            You need <strong>at least 42,069</strong> ANAL to unlock read-only RPC/DAS calls through this app (same tier rules as before: higher balance = higher tier label — used for access only here, not AI).
-            Run <strong>JSON-RPC</strong> from the <a class="links" href="https://www.helius.dev/docs/api-reference" target="_blank" rel="noopener noreferrer">Helius Solana API</a>, plus <a class="links" href="https://www.helius.dev/docs/api-reference/enhanced-transactions/overview" target="_blank" rel="noopener noreferrer">Enhanced Transactions</a> (human-readable swaps, transfers, NFT events — proxied through this app). See <a class="links" href="https://www.helius.dev/docs/llms.txt" target="_blank" rel="noopener noreferrer">docs index</a>. No Kimi on this page. DYOR.
+            Connect a wallet; we check <strong>$ANAL</strong> for mint
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:0.85rem;">95DJix…85DKvHK</span>
+            — you need <strong>≥42,069</strong> ANAL to open the tools below. Same page as the public site:
+            <a class="links" href="index.html#token">token &amp; lock</a>,
+            <a class="links" href="index.html#chat">chat</a>. DYOR.
         </p>
 
         <div id="panel-connect" class="card">
@@ -185,10 +186,9 @@
                 <p class="fine" id="wallet-line"></p>
             </div>
             <div class="card" id="panel-rpc">
-                <h2>Custom JSON-RPC (Helius)</h2>
+                <h2>JSON-RPC</h2>
                 <p style="font-size:0.85rem;color:var(--foreground-muted);margin-bottom:0.75rem;">
-                    Pick a <strong>read-only</strong> method and pass <code>params</code> as JSON (array for most calls, object for DAS e.g. <code>getAssetsByOwner</code>).
-                    Reference: <a class="links" href="https://www.helius.dev/docs/api-reference/rpc/http-methods" target="_blank" rel="noopener noreferrer">HTTP RPC methods</a>.
+                    Read-only method + <code>params</code> as JSON. <a class="links" href="https://www.helius.dev/docs/api-reference/rpc/http-methods" target="_blank" rel="noopener noreferrer">Method list</a>.
                 </p>
                 <label class="fine" for="rpc-method">Method</label>
                 <select id="rpc-method" aria-label="RPC method"></select>
@@ -197,42 +197,24 @@
                 <button type="button" class="btn" id="btn-rpc-run">Run RPC</button>
             </div>
             <div class="card">
-                <h2>Quick queries (read-only)</h2>
-                <p style="font-size:0.88rem;color:var(--foreground-muted);margin-bottom:1rem;">
-                    Fetches go through the AnalX API (your Helius key stays on the server).
-                    Full API catalog: <a class="links" href="https://www.helius.dev/docs/api-reference" target="_blank" rel="noopener noreferrer">Helius docs</a>.
-                </p>
+                <h2>Wallet &amp; transactions</h2>
                 <p style="font-size:0.8rem;color:var(--foreground-tertiary);margin:0 0 0.5rem;"><strong>Your wallet</strong></p>
                 <div class="tools-grid" style="margin-bottom:1rem;">
-                    <button type="button" class="tool-btn" id="btn-my-sigs">My recent signatures</button>
-                    <button type="button" class="tool-btn" id="btn-my-das">My assets (DAS)</button>
-                    <button type="button" class="tool-btn" id="btn-my-accounts">Your ANAL token accounts</button>
+                    <button type="button" class="tool-btn" id="btn-my-sigs">Recent signatures</button>
+                    <button type="button" class="tool-btn" id="btn-my-das">Assets (DAS)</button>
+                    <button type="button" class="tool-btn" id="btn-my-accounts">ANAL token accounts</button>
                 </div>
-                <p style="font-size:0.8rem;color:var(--foreground-tertiary);margin:0 0 0.5rem;"><strong>$ANAL mint &amp; chain</strong></p>
-                <div class="tools-grid">
-                    <button type="button" class="tool-btn" data-endpoint="/api/supply">Token supply</button>
-                    <button type="button" class="tool-btn" data-endpoint="/api/holders">Largest holders</button>
-                    <button type="button" class="tool-btn" data-endpoint="/api/token">Token metadata (DAS getAsset)</button>
-                    <button type="button" class="tool-btn" data-endpoint="/api/transactions">Recent mint signatures</button>
-                </div>
-                <p style="font-size:0.8rem;color:var(--foreground-tertiary);margin:1rem 0 0.5rem;"><strong>Enhanced (parsed) — same API as <a class="links" href="https://www.helius.dev/docs/api-reference/enhanced-transactions/overview" target="_blank" rel="noopener noreferrer">Helius docs</a></strong></p>
+                <p style="font-size:0.8rem;color:var(--foreground-tertiary);margin:1rem 0 0.5rem;"><strong>Parsed activity</strong></p>
                 <div class="tools-grid" style="margin-bottom:1rem;">
-                    <button type="button" class="tool-btn" id="btn-enhanced-history">My parsed activity (recent)</button>
+                    <button type="button" class="tool-btn" id="btn-enhanced-history">Recent (enhanced)</button>
                 </div>
-                <p style="font-size:0.8rem;color:var(--foreground-tertiary);margin:0 0 0.5rem;"><strong>Decode any transaction</strong></p>
+                <p style="font-size:0.8rem;color:var(--foreground-tertiary);margin:0 0 0.5rem;"><strong>Transaction</strong></p>
                 <div class="chat-input-row" style="margin-bottom:0.5rem;">
-                    <input type="text" id="tx-sig-input" placeholder="Paste transaction signature (base58)…" autocomplete="off" style="font-size:0.85rem;" />
+                    <input type="text" id="tx-sig-input" placeholder="Signature (base58)…" autocomplete="off" style="font-size:0.85rem;" />
                     <button type="button" class="btn btn-secondary" id="btn-tx-decode">RPC (jsonParsed)</button>
                     <button type="button" class="btn btn-secondary" id="btn-tx-enhanced">Enhanced</button>
                 </div>
                 <pre class="out hidden" id="tool-output"></pre>
-            </div>
-            <div class="card">
-                <h2>lana.ai</h2>
-                <p style="font-size:0.9rem;color:var(--foreground-muted);">
-                    Learn about the deployment stack and agents at
-                    <a class="links" href="https://lana.ai" target="_blank" rel="noopener noreferrer">lana.ai</a>.
-                </p>
             </div>
         </div>
     </main>
@@ -374,7 +356,7 @@
                 deniedText.textContent =
                     'You hold $ANAL but need at least ' +
                     (data.minAnalForChatUi != null ? Number(data.minAnalForChatUi).toLocaleString() : '42,069') +
-                    ' ANAL to unlock the Helius explorer on this page.';
+                    ' ANAL to unlock holder tools on this page.';
                 btnConnect.classList.remove('hidden');
                 btnDisconnect.classList.add('hidden');
                 return;
@@ -384,10 +366,7 @@
                 'Balance: ~' +
                 (data.uiAmount != null ? Number(data.uiAmount).toLocaleString(undefined, { maximumFractionDigits: 4 }) : '?') +
                 ' ANAL.';
-            tierLine.textContent =
-                'Access tier ' +
-                (data.tier || '?') +
-                ' (min 42,069 ANAL; balance checked via Helius). Read-only RPC only — no AI on this page.';
+            tierLine.textContent = 'Tier ' + (data.tier || '?') + ' · min 42,069 ANAL';
             walletLine.textContent = 'Wallet: ' + publicKey;
             rpcParams.value = JSON.stringify([publicKey], null, 2);
             loadRpcMethodOptions();
@@ -450,21 +429,6 @@
             } catch (e) {
                 toolOutput.textContent = String(e);
             }
-        });
-
-        document.querySelectorAll('.tool-btn[data-endpoint]').forEach(function (btn) {
-            btn.addEventListener('click', async function () {
-                const path = btn.getAttribute('data-endpoint');
-                toolOutput.classList.remove('hidden');
-                toolOutput.textContent = 'Loading ' + path + '…';
-                try {
-                    const r = await fetch(CONFIG.API_URL + path);
-                    const json = await r.json();
-                    toolOutput.textContent = JSON.stringify(json, null, 2);
-                } catch (e) {
-                    toolOutput.textContent = String(e);
-                }
-            });
         });
 
         document.getElementById('btn-my-accounts').addEventListener('click', async function () {
@@ -558,7 +522,7 @@
                 return;
             }
             toolOutput.classList.remove('hidden');
-            toolOutput.textContent = 'Loading Helius Enhanced parse…';
+            toolOutput.textContent = 'Loading enhanced parse…';
             try {
                 const r = await fetch(CONFIG.API_URL + '/api/helius/enhanced/transactions', {
                     method: 'POST',
