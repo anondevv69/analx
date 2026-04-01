@@ -148,7 +148,6 @@
         <nav aria-label="Site">
             <a href="index.html#story">Story</a>
             <a href="index.html#token">Token</a>
-            <a href="index.html#chat">Chat</a>
             <a href="lana-talk.html" aria-current="page">Tools</a>
         </nav>
     </header>
@@ -158,9 +157,17 @@
             Connect a wallet; we check <strong>$ANAL</strong> for mint
             <span style="font-family:'IBM Plex Mono',monospace;font-size:0.85rem;">95DJix…85DKvHK</span>
             — you need <strong>≥42,069</strong> ANAL to open the tools below. Same page as the public site:
-            <a class="links" href="index.html#token">token &amp; lock</a>,
-            <a class="links" href="index.html#chat">chat</a>. DYOR.
+            <a class="links" href="index.html#token">token &amp; lock</a>. DYOR.
         </p>
+
+        <div id="panel-gate" class="card hidden">
+            <h2>Password</h2>
+            <p style="font-size:0.9rem;color:var(--foreground-muted);margin-bottom:1rem;">Holder tools are locked while we work on them.</p>
+            <input type="password" id="gate-password" autocomplete="current-password" placeholder="Password" aria-label="Tools password"
+                style="width:100%;max-width:320px;padding:0.65rem 0.75rem;border-radius:0.5rem;border:1px solid var(--border);background:var(--background-secondary);color:var(--foreground);display:block;margin-bottom:0.75rem;font-family:inherit;font-size:0.95rem;" />
+            <button type="button" class="btn" id="btn-gate-unlock">Unlock</button>
+            <p class="status error" id="gate-status" style="margin-top:0.75rem;"></p>
+        </div>
 
         <div id="panel-connect" class="card">
             <h2>Wallet</h2>
@@ -175,7 +182,7 @@
         <div id="panel-denied" class="card hidden">
             <h2>Not detected as a holder</h2>
             <p class="status error" id="denied-text"></p>
-            <p class="fine">You can still use the public <a href="index.html#chat" class="links">chat</a> and on-chain keywords on the home page when the API is up.</p>
+            <p class="fine">You can still use the <a href="index.html#story" class="links">home page</a> when the API is up.</p>
         </div>
 
         <div id="panel-tools" class="hidden">
@@ -221,6 +228,58 @@
     <script>
         const CONFIG = { API_URL: 'https://analx-production-76f1.up.railway.app' };
         const MINT_SHORT = '95DJixZhoy898shqxoZy5riztdf95fTqLXBog85DKvHK';
+        const HOLDER_TOOLS_PW_KEY = 'anal_holder_tools_pw';
+
+        function authHeaders(extra) {
+            const h = Object.assign({}, extra);
+            const p = sessionStorage.getItem(HOLDER_TOOLS_PW_KEY);
+            if (p) {
+                h['X-Holder-Tools-Password'] = p;
+            }
+            return h;
+        }
+
+        function onHolderToolsUnauthorized() {
+            sessionStorage.removeItem(HOLDER_TOOLS_PW_KEY);
+            const gate = document.getElementById('panel-gate');
+            const connect = document.getElementById('panel-connect');
+            const tools = document.getElementById('panel-tools');
+            const denied = document.getElementById('panel-denied');
+            if (gate) gate.classList.remove('hidden');
+            if (connect) connect.classList.add('hidden');
+            if (tools) tools.classList.add('hidden');
+            if (denied) denied.classList.add('hidden');
+            const gs = document.getElementById('gate-status');
+            if (gs) {
+                gs.textContent = 'Password required or session expired — unlock again.';
+                gs.classList.add('error');
+            }
+        }
+
+        async function initHolderToolsGate() {
+            let s;
+            try {
+                const r = await fetch(CONFIG.API_URL + '/api/holder-tools/status');
+                s = await r.json();
+            } catch (_) {
+                return;
+            }
+            const gate = document.getElementById('panel-gate');
+            const connect = document.getElementById('panel-connect');
+            if (!gate || !connect) return;
+            if (!s.passwordRequired) {
+                gate.classList.add('hidden');
+                connect.classList.remove('hidden');
+                return;
+            }
+            if (sessionStorage.getItem(HOLDER_TOOLS_PW_KEY)) {
+                gate.classList.add('hidden');
+                connect.classList.remove('hidden');
+                return;
+            }
+            gate.classList.remove('hidden');
+            connect.classList.add('hidden');
+        }
 
         const btnConnect = document.getElementById('btn-connect');
         const btnDisconnect = document.getElementById('btn-disconnect');
@@ -235,6 +294,9 @@
         const rpcMethod = document.getElementById('rpc-method');
         const rpcParams = document.getElementById('rpc-params');
         const btnRpcRun = document.getElementById('btn-rpc-run');
+        const btnGateUnlock = document.getElementById('btn-gate-unlock');
+        const gatePassword = document.getElementById('gate-password');
+        const gateStatus = document.getElementById('gate-status');
 
         let publicKey = null;
 
@@ -250,7 +312,13 @@
         async function loadRpcMethodOptions() {
             rpcMethod.innerHTML = '';
             try {
-                const r = await fetch(CONFIG.API_URL + '/api/helius/allowed-methods');
+                const r = await fetch(CONFIG.API_URL + '/api/helius/allowed-methods', {
+                    headers: authHeaders(),
+                });
+                if (r.status === 401) {
+                    onHolderToolsUnauthorized();
+                    return;
+                }
                 const list = await r.json();
                 if (!Array.isArray(list)) return;
                 list.forEach(function (m) {
@@ -272,6 +340,7 @@
             try {
                 r = await fetch(CONFIG.API_URL + '/api/holder/anal/' + encodeURIComponent(address), {
                     signal: abortAfter(25000),
+                    headers: authHeaders(),
                 });
             } catch (e) {
                 if (e.name === 'AbortError') {
@@ -287,6 +356,10 @@
                 throw e;
             }
             const text = await r.text();
+            if (r.status === 401) {
+                onHolderToolsUnauthorized();
+                throw new Error('Unlock holder tools with the password first.');
+            }
             if (!r.ok) {
                 try {
                     const err = JSON.parse(text);
@@ -409,7 +482,7 @@
             try {
                 const r = await fetch(CONFIG.API_URL + '/api/helius/rpc', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: authHeaders({ 'Content-Type': 'application/json' }),
                     body: JSON.stringify({
                         wallet: publicKey,
                         method: method,
@@ -418,6 +491,11 @@
                     signal: abortAfter(60000),
                 });
                 const text = await r.text();
+                if (r.status === 401) {
+                    onHolderToolsUnauthorized();
+                    toolOutput.textContent = 'Password required — unlock holder tools.';
+                    return;
+                }
                 let json;
                 try {
                     json = JSON.parse(text);
@@ -436,7 +514,14 @@
             toolOutput.classList.remove('hidden');
             toolOutput.textContent = 'Loading your token accounts…';
             try {
-                const r = await fetch(CONFIG.API_URL + '/api/account/' + encodeURIComponent(publicKey));
+                const r = await fetch(CONFIG.API_URL + '/api/account/' + encodeURIComponent(publicKey), {
+                    headers: authHeaders(),
+                });
+                if (r.status === 401) {
+                    onHolderToolsUnauthorized();
+                    toolOutput.textContent = 'Password required — unlock holder tools.';
+                    return;
+                }
                 const json = await r.json();
                 toolOutput.textContent = JSON.stringify(json, null, 2);
             } catch (e) {
@@ -450,8 +535,14 @@
             toolOutput.textContent = 'Loading signatures…';
             try {
                 const r = await fetch(
-                    CONFIG.API_URL + '/api/wallet/' + encodeURIComponent(publicKey) + '/signatures?limit=25'
+                    CONFIG.API_URL + '/api/wallet/' + encodeURIComponent(publicKey) + '/signatures?limit=25',
+                    { headers: authHeaders() }
                 );
+                if (r.status === 401) {
+                    onHolderToolsUnauthorized();
+                    toolOutput.textContent = 'Password required — unlock holder tools.';
+                    return;
+                }
                 const json = await r.json();
                 toolOutput.textContent = JSON.stringify(json, null, 2);
             } catch (e) {
@@ -466,10 +557,15 @@
             try {
                 const r = await fetch(CONFIG.API_URL + '/api/das/assets-by-owner', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: authHeaders({ 'Content-Type': 'application/json' }),
                     body: JSON.stringify({ ownerAddress: publicKey, limit: 100 }),
                 });
                 const text = await r.text();
+                if (r.status === 401) {
+                    onHolderToolsUnauthorized();
+                    toolOutput.textContent = 'Password required — unlock holder tools.';
+                    return;
+                }
                 let json;
                 try {
                     json = JSON.parse(text);
@@ -492,8 +588,13 @@
             }
             toolOutput.classList.remove('hidden');
             toolOutput.textContent = 'Loading transaction…';
-            return fetch(CONFIG.API_URL + '/api/tx/' + encodeURIComponent(sig))
+            return fetch(CONFIG.API_URL + '/api/tx/' + encodeURIComponent(sig), { headers: authHeaders() })
                 .then(function (r) {
+                    if (r.status === 401) {
+                        onHolderToolsUnauthorized();
+                        toolOutput.textContent = 'Password required — unlock holder tools.';
+                        return Promise.reject(new Error('401'));
+                    }
                     return r.text();
                 })
                 .then(function (text) {
@@ -507,6 +608,7 @@
                     toolOutput.textContent = JSON.stringify(json, null, 2);
                 })
                 .catch(function (e) {
+                    if (e && e.message === '401') return;
                     toolOutput.textContent = String(e);
                 });
         }
@@ -526,7 +628,7 @@
             try {
                 const r = await fetch(CONFIG.API_URL + '/api/helius/enhanced/transactions', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: authHeaders({ 'Content-Type': 'application/json' }),
                     body: JSON.stringify({
                         wallet: publicKey,
                         transactions: [sig],
@@ -534,6 +636,11 @@
                     signal: abortAfter(60000),
                 });
                 const text = await r.text();
+                if (r.status === 401) {
+                    onHolderToolsUnauthorized();
+                    toolOutput.textContent = 'Password required — unlock holder tools.';
+                    return;
+                }
                 let json;
                 try {
                     json = JSON.parse(text);
@@ -559,8 +666,13 @@
                     '/transactions?wallet=' +
                     encodeURIComponent(publicKey) +
                     '&limit=25';
-                const r = await fetch(u, { signal: abortAfter(60000) });
+                const r = await fetch(u, { signal: abortAfter(60000), headers: authHeaders() });
                 const text = await r.text();
+                if (r.status === 401) {
+                    onHolderToolsUnauthorized();
+                    toolOutput.textContent = 'Password required — unlock holder tools.';
+                    return;
+                }
                 let json;
                 try {
                     json = JSON.parse(text);
@@ -573,6 +685,39 @@
                 toolOutput.textContent = String(e);
             }
         });
+
+        if (btnGateUnlock && gatePassword && gateStatus) {
+            async function tryGateUnlock() {
+                gateStatus.textContent = '';
+                gateStatus.classList.remove('error');
+                const pw = gatePassword.value;
+                try {
+                    const r = await fetch(CONFIG.API_URL + '/api/holder-tools/auth', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ password: pw }),
+                    });
+                    if (!r.ok) {
+                        gateStatus.textContent = 'Wrong password.';
+                        gateStatus.classList.add('error');
+                        return;
+                    }
+                    sessionStorage.setItem(HOLDER_TOOLS_PW_KEY, pw);
+                    gatePassword.value = '';
+                    document.getElementById('panel-gate').classList.add('hidden');
+                    document.getElementById('panel-connect').classList.remove('hidden');
+                } catch (e) {
+                    gateStatus.textContent = e.message || String(e);
+                    gateStatus.classList.add('error');
+                }
+            }
+            btnGateUnlock.addEventListener('click', tryGateUnlock);
+            gatePassword.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter') tryGateUnlock();
+            });
+        }
+
+        initHolderToolsGate();
     </script>
 </body>
 </html>

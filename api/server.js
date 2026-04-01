@@ -253,6 +253,20 @@ function normalizeHistory(raw) {
     return out.slice(-10);
 }
 
+/** When set, holder-tools page + related API routes require header `X-Holder-Tools-Password`. */
+const HOLDER_TOOLS_PASSWORD = (process.env.HOLDER_TOOLS_PASSWORD || '').trim();
+
+function requireHolderToolsPassword(req, res, next) {
+    if (!HOLDER_TOOLS_PASSWORD) {
+        return next();
+    }
+    const p = req.get('x-holder-tools-password') || req.get('X-Holder-Tools-Password');
+    if (p === HOLDER_TOOLS_PASSWORD) {
+        return next();
+    }
+    return res.status(401).json({ error: 'holder_tools_password_required' });
+}
+
 const app = express();
 
 app.use(
@@ -263,11 +277,27 @@ app.use(
             }
             callback(null, allowedOriginsSet.has(origin));
         },
+        allowedHeaders: ['Content-Type', 'X-Holder-Tools-Password'],
     })
 );
 app.use(express.json());
 
-app.get('/api/holder/anal/:address', async (req, res) => {
+app.get('/api/holder-tools/status', (req, res) => {
+    res.json({ passwordRequired: Boolean(HOLDER_TOOLS_PASSWORD) });
+});
+
+app.post('/api/holder-tools/auth', (req, res) => {
+    if (!HOLDER_TOOLS_PASSWORD) {
+        return res.json({ ok: true, passwordRequired: false });
+    }
+    const { password } = req.body || {};
+    if (password === HOLDER_TOOLS_PASSWORD) {
+        return res.json({ ok: true, passwordRequired: true });
+    }
+    return res.status(401).json({ error: 'invalid_password' });
+});
+
+app.get('/api/holder/anal/:address', requireHolderToolsPassword, async (req, res) => {
     try {
         const { address } = req.params;
         if (!address || address.length < 32 || address.length > 52) {
@@ -368,7 +398,7 @@ app.get('/api/transactions', async (req, res) => {
     }
 });
 
-app.get('/api/account/:address', async (req, res) => {
+app.get('/api/account/:address', requireHolderToolsPassword, async (req, res) => {
     try {
         const { address } = req.params;
         const response = await fetch(`https://mainnet.helius-rpc.com/?api-key=${HELIUS_API_KEY}`, {
@@ -388,7 +418,7 @@ app.get('/api/account/:address', async (req, res) => {
     }
 });
 
-app.get('/api/wallet/:address/signatures', async (req, res) => {
+app.get('/api/wallet/:address/signatures', requireHolderToolsPassword, async (req, res) => {
     try {
         const { address } = req.params;
         const limit = Math.min(100, Math.max(1, parseInt(req.query.limit || '20', 10) || 20));
@@ -410,7 +440,7 @@ app.get('/api/wallet/:address/signatures', async (req, res) => {
     }
 });
 
-app.get('/api/tx/:signature', async (req, res) => {
+app.get('/api/tx/:signature', requireHolderToolsPassword, async (req, res) => {
     try {
         const sig = req.params.signature;
         if (!sig || sig.length < 80) {
@@ -434,7 +464,7 @@ app.get('/api/tx/:signature', async (req, res) => {
     }
 });
 
-app.post('/api/das/assets-by-owner', async (req, res) => {
+app.post('/api/das/assets-by-owner', requireHolderToolsPassword, async (req, res) => {
     try {
         const ownerAddress = req.body && req.body.ownerAddress;
         if (!ownerAddress || typeof ownerAddress !== 'string') {
@@ -464,12 +494,12 @@ app.post('/api/das/assets-by-owner', async (req, res) => {
     }
 });
 
-app.get('/api/helius/allowed-methods', (req, res) => {
+app.get('/api/helius/allowed-methods', requireHolderToolsPassword, (req, res) => {
     res.json([...READ_ONLY_RPC_METHODS].sort());
 });
 
 /** POST body: { wallet, transactions: string[], commitment?: 'finalized'|'confirmed' } — max 100 sigs */
-app.post('/api/helius/enhanced/transactions', async (req, res) => {
+app.post('/api/helius/enhanced/transactions', requireHolderToolsPassword, async (req, res) => {
     try {
         const { wallet, transactions, commitment } = req.body || {};
         const g = await gateHolderWallet(wallet);
@@ -519,7 +549,7 @@ app.post('/api/helius/enhanced/transactions', async (req, res) => {
  * Query: wallet (required), optional before-signature, after-signature, type, source, limit, commitment
  * Proxies GET /v0/addresses/{address}/transactions on Helius Enhanced API.
  */
-app.get('/api/helius/enhanced/addresses/:address/transactions', async (req, res) => {
+app.get('/api/helius/enhanced/addresses/:address/transactions', requireHolderToolsPassword, async (req, res) => {
     try {
         const g = await gateHolderWallet(req.query.wallet);
         if (!g.ok) {
@@ -557,7 +587,7 @@ app.get('/api/helius/enhanced/addresses/:address/transactions', async (req, res)
     }
 });
 
-app.post('/api/helius/rpc', async (req, res) => {
+app.post('/api/helius/rpc', requireHolderToolsPassword, async (req, res) => {
     try {
         const { method, params, wallet } = req.body || {};
         const g = await gateHolderWallet(wallet);

@@ -535,6 +535,11 @@
                 padding: 1.5rem;
             }
         }
+
+        /* Temporarily hidden — delete this rule (and class names below) to show again */
+        .site-hidden {
+            display: none !important;
+        }
     </style>
 </head>
 <body>
@@ -546,7 +551,6 @@
         <nav aria-label="Page sections">
             <a href="#story">Story</a>
             <a href="#token">Token</a>
-            <a href="#chat">Chat</a>
             <a href="lana-talk.html">Tools</a>
         </nav>
     </header>
@@ -676,7 +680,7 @@
         </div>
     </section>
 
-    <section class="timeline" id="chat">
+    <section class="timeline site-hidden" id="chat" aria-hidden="true">
         <h2>Chat with AnalX Agent 🤖</h2>
         <div class="story-content" style="max-width: 600px; margin: 0 auto; padding: 1.5rem;">
             <p style="font-size: 0.9rem; color: var(--foreground-muted); margin-bottom: 1rem;">Ask about $ANAL, lana.ai, or live on-chain facts (supply, holders, mint). AI banter is limited to <strong>5 messages</strong> per refresh — for quick info, not endless threads. DYOR — not financial advice.</p>
@@ -974,7 +978,7 @@
         });
     </script>
     <footer>
-        <div class="social-links">
+        <div class="social-links site-hidden">
             <a href="https://x.com/analbylana" target="_blank" rel="noopener noreferrer">X / Twitter</a>
             <a href="https://x.com/i/communities/2038095648847732785" target="_blank" rel="noopener noreferrer">Community</a>
             <a href="https://pump.fun/coin/95DJixZhoy898shqxoZy5riztdf95fTqLXBog85DKvHK" target="_blank" rel="noopener noreferrer">Pump.fun</a>
