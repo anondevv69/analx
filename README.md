@@ -25,6 +25,21 @@ Monorepo for **$ANAL** / **Anal by lana.ai**: static site, Helius proxy (on-chai
 
 **website:** Set `CONFIG.AI_URL` and `CONFIG.HELIUS_URL` in `website/index.html` to your deployed Railway URLs (no secrets in the frontend).
 
+## Railway (this repo)
+
+Two **services** from the same GitHub repo (deploy each folder with **Railway CLI** `railway up` from `helius-proxy/` and `ai-agent/`, or set **Root Directory** in the dashboard).
+
+| Service (example name) | Folder | Required variables |
+|--------------------------|--------|---------------------|
+| Helius proxy | `helius-proxy/` | `HELIUS_API_KEY` |
+| AnalX chat | `ai-agent/` | `KIMI_API_KEY` |
+
+After first deploy, open **Railway → project → each service → Variables**, add the keys, and **Redeploy** (or let Railway redeploy on save). `PORT` is set automatically.
+
+Optional on both: `ALLOWED_ORIGINS` — comma-separated origins for your live site (e.g. `https://YOURNAME.github.io,https://yourdomain.xyz`).
+
+Then set `CONFIG.AI_URL` and `CONFIG.HELIUS_URL` in `website/index.html` to your two `*.up.railway.app` URLs and redeploy GitHub Pages if needed.
+
 ## Repository
 
 Remote: [github.com/anondevv69/analx](https://github.com/anondevv69/analx)
