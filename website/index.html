@@ -680,10 +680,9 @@
         const chatInput = document.getElementById('chat-input');
         const chatMessages = document.getElementById('chat-messages');
 
-        // Railway backends — no API keys here; set secrets only in Railway
+        // Single Railway API (Helius routes + /api/chat) — no keys in the browser
         const CONFIG = {
-            AI_URL: 'https://ai-agent-production-e177.up.railway.app',
-            HELIUS_URL: 'https://analx-production.up.railway.app',
+            API_URL: 'https://analx-production.up.railway.app',
         };
 
         /** Last ~10 turns for Kimi so follow-ups stay coherent */
@@ -708,7 +707,7 @@
 
         async function getAIResponse(message) {
             try {
-                const response = await fetch(`${CONFIG.AI_URL}/api/chat`, {
+                const response = await fetch(`${CONFIG.API_URL}/api/chat`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ message, history: aiChatHistory }),
@@ -740,7 +739,7 @@
 
         async function getHeliusData(endpoint) {
             try {
-                const response = await fetch(`${CONFIG.HELIUS_URL}${endpoint}`);
+                const response = await fetch(`${CONFIG.API_URL}${endpoint}`);
                 if (!response.ok) throw new Error('Helius error');
                 return await response.json();
             } catch (e) {

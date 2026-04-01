@@ -3,6 +3,9 @@
 **/.git
 **/node_modules
 website
+helius-proxy
+ai-agent
+scripts
 *.md
 .env
 .env.*
