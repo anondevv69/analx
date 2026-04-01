@@ -2,10 +2,12 @@ const express = require('express');
 const cors = require('cors');
 const fetch = require('node-fetch');
 const { SYSTEM_PROMPT } = require('./prompt');
+const { HELIUS_CHAT_SYSTEM_PROMPT } = require('./helius-chat-prompt');
 const { READ_ONLY_RPC_METHODS } = require('./helius-rpc-allowlist');
 
 const HELIUS_API_KEY = process.env.HELIUS_API_KEY;
 const KIMI_API_KEY = process.env.KIMI_API_KEY;
+const JUPITER_API_KEY = (process.env.JUPITER_API_KEY || '').trim();
 const TOKEN_MINT = process.env.TOKEN_MINT || '95DJixZhoy898shqxoZy5riztdf95fTqLXBog85DKvHK';
 const KIMI_API_URL = 'https://api.kimi.com/v1/chat/completions';
 
@@ -251,6 +253,84 @@ function normalizeHistory(raw) {
         out.push({ role, content: item.content.slice(0, 8000) });
     }
     return out.slice(-10);
+}
+
+async function fetchJupiterTrending24h(limit) {
+    if (!JUPITER_API_KEY) return null;
+    const ctrl = new AbortController();
+    const tid = setTimeout(() => ctrl.abort(), HELIUS_FETCH_TIMEOUT_MS);
+    try {
+        const lim = Math.min(100, Math.max(1, limit));
+        const response = await fetch(
+            `https://api.jup.ag/tokens/v2/toptrending/24h?limit=${lim}`,
+            {
+                headers: {
+                    'x-api-key': JUPITER_API_KEY,
+                    Accept: 'application/json',
+                },
+                signal: ctrl.signal,
+            }
+        );
+        if (!response.ok) return null;
+        return await response.json();
+    } catch (_) {
+        return null;
+    } finally {
+        clearTimeout(tid);
+    }
+}
+
+/**
+ * Builds CONTEXT for Kimi: holder status, DAS snapshot, optional Jupiter trending when user asks market-style questions.
+ */
+async function buildHeliusChatContext(wallet, userMessage, holderStatus) {
+    const lower = (userMessage || '').toLowerCase();
+    const wantTrend =
+        /\b(trending|trend|hot tokens|top tokens|volume leaders|what'?s hot|24\s*h|leaderboard|market movers)\b/.test(
+            lower
+        );
+
+    const st = holderStatus || (await fetchAnalHolderStatus(wallet));
+
+    let dasPart = '';
+    const d = await fetchHeliusRpcJson({
+        jsonrpc: '2.0',
+        id: 1,
+        method: 'getAssetsByOwner',
+        params: {
+            ownerAddress: wallet,
+            page: 1,
+            limit: 25,
+            displayOptions: { showFungible: true, showNativeBalance: true },
+        },
+    });
+    if (d && !d.__timedOut && !d.error && d.result) {
+        dasPart = JSON.stringify(d.result).slice(0, 8000);
+    }
+
+    let trendingPart = '';
+    if (wantTrend) {
+        const tr = await fetchJupiterTrending24h(15);
+        if (tr && Array.isArray(tr) && tr.length) {
+            trendingPart = JSON.stringify(tr).slice(0, 12000);
+        } else if (wantTrend && !JUPITER_API_KEY) {
+            trendingPart =
+                '[Jupiter trending unavailable: set JUPITER_API_KEY on the API server for live toptrending data.]';
+        }
+    }
+
+    const holderJson = st && !st.error ? JSON.stringify(st, null, 2).slice(0, 4000) : '{}';
+
+    return {
+        contextBlock:
+            '--- HOLDER (Helius) ---\n' +
+            holderJson +
+            '\n\n--- WALLET ASSETS DAS (Helius, truncated) ---\n' +
+            dasPart +
+            (trendingPart
+                ? '\n\n--- JUPITER TRENDING 24h (when applicable) ---\n' + trendingPart
+                : ''),
+    };
 }
 
 /** When set, holder-tools page + related API routes require header `X-Holder-Tools-Password`. */
@@ -624,6 +704,97 @@ app.post('/api/helius/rpc', requireHolderToolsPassword, async (req, res) => {
         }
         res.json(data);
     } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+/** Kimi + Helius/Jupiter CONTEXT — holder tier limits; requires X-Holder-Tools-Password when HOLDER_TOOLS_PASSWORD is set */
+app.post('/api/holder/helius-chat', requireHolderToolsPassword, async (req, res) => {
+    try {
+        const { wallet, message, history } = req.body || {};
+        const g = await gateHolderWallet(wallet);
+        if (!g.ok) {
+            return res.status(g.status).json(g.body);
+        }
+
+        if (!message || typeof message !== 'string') {
+            return res.status(400).json({ error: 'message required' });
+        }
+        const userMessage = message.trim().slice(0, 8000);
+        if (!userMessage) {
+            return res.status(400).json({ error: 'message required' });
+        }
+
+        const st = await fetchAnalHolderStatus(g.wallet);
+        if (st.error) {
+            return res.status(502).json({ error: st.error });
+        }
+        if (!st.eligibleForChat) {
+            return res.status(403).json({
+                error: 'insufficient_anal',
+                minAnalForChatUi: ANAL_TIER1_MIN_UI,
+            });
+        }
+
+        const prior = normalizeHistory(history);
+        const userTurnsInHistory = prior.filter((m) => m.role === 'user').length;
+        const promptLimit = st.promptLimit || ANAL_TIER1_PROMPTS;
+        if (userTurnsInHistory >= promptLimit) {
+            return res.status(429).json({
+                error: 'chat_limit',
+                message:
+                    process.env.HELIUS_CHAT_LIMIT_MESSAGE ||
+                    'Message limit reached for your tier. Refresh the page to reset. DYOR.',
+                limit: promptLimit,
+            });
+        }
+
+        const { contextBlock } = await buildHeliusChatContext(g.wallet, userMessage, st);
+
+        const systemContent =
+            HELIUS_CHAT_SYSTEM_PROMPT +
+            '\n\n--- CONTEXT (real data for this request; may be partial) ---\n' +
+            contextBlock;
+
+        const kimiMaxTokens = Math.min(
+            4096,
+            parseInt(process.env.KIMI_MAX_TOKENS_HELIUS_CHAT || '2048', 10) || 2048
+        );
+
+        const messages = [
+            { role: 'system', content: systemContent },
+            ...prior,
+            { role: 'user', content: userMessage },
+        ];
+
+        const response = await fetch(KIMI_API_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${KIMI_API_KEY}`,
+            },
+            body: JSON.stringify({
+                model: 'kimi-latest',
+                messages,
+                temperature: KIMI_TEMPERATURE,
+                max_tokens: kimiMaxTokens,
+            }),
+        });
+
+        const data = await response.json();
+
+        if (data.choices && data.choices[0]) {
+            return res.json({
+                response: data.choices[0].message.content,
+                timestamp: new Date().toISOString(),
+                promptRemaining: Math.max(0, promptLimit - userTurnsInHistory - 1),
+                promptLimit,
+                tier: st.tier,
+            });
+        }
+        return res.status(500).json({ error: 'Invalid AI response', details: data });
+    } catch (error) {
+        console.error('Helius chat error:', error);
         res.status(500).json({ error: error.message });
     }
 });

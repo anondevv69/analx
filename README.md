@@ -14,7 +14,7 @@ Monorepo for **$ANAL** / **Anal by lana.ai**: static site plus **one backend** (
 2. **Variables** (same service):
    - `HELIUS_API_KEY` — required  
    - `KIMI_API_KEY` — required  
-   - Optional: `TOKEN_MINT`, `KIMI_TEMPERATURE`, `ALLOWED_ORIGINS`, `CORS_EXTRA_ORIGINS`, `HELIUS_FETCH_TIMEOUT_MS` (default `12000`), `MAX_USER_CHAT_PROMPTS`, `CHAT_LIMIT_MESSAGE`, `KIMI_MAX_TOKENS` (default `512` for **`/api/chat`** on the home page). **`HOLDER_TOOLS_PASSWORD`** — when set, `lana-talk.html` and holder-tool API routes require header `X-Holder-Tools-Password` (browser stores it in `sessionStorage` after `POST /api/holder-tools/auth`). Omit to leave tools open. **Holder gate** (`/api/holder/anal`, **`POST /api/helius/rpc`**): same ANAL thresholds — `ANAL_TIER1_MIN_UI`, `ANAL_TIER2_BOUND_UI`, `ANAL_TIER1_PROMPTS`, `ANAL_TIER2_PROMPTS` still shape `promptLimit` / `tier` on the holder status object (`eligibleForChat` = ≥ min ANAL). For `ALLOWED_ORIGINS` / `CORS_EXTRA_ORIGINS`, see above. If both origin vars are empty, all origins are allowed (dev only).
+   - Optional: `TOKEN_MINT`, `KIMI_TEMPERATURE`, `ALLOWED_ORIGINS`, `CORS_EXTRA_ORIGINS`, `HELIUS_FETCH_TIMEOUT_MS` (default `12000`), `MAX_USER_CHAT_PROMPTS`, `CHAT_LIMIT_MESSAGE`, `KIMI_MAX_TOKENS` (default `512` for **`/api/chat`** on the home page). **`HOLDER_TOOLS_PASSWORD`** — when set, `lana-talk.html` and holder-tool API routes require header `X-Holder-Tools-Password` (browser stores it in `sessionStorage` after `POST /api/holder-tools/auth`). Omit to leave tools open. **`JUPITER_API_KEY`** — optional; enables [Jupiter](https://dev.jup.ag/) `toptrending/24h` data in **`POST /api/holder/helius-chat`** when users ask about trending / 24h movers. **`KIMI_MAX_TOKENS_HELIUS_CHAT`** (default `2048`) — max tokens for that route. **Holder gate** (`/api/holder/anal`, **`POST /api/helius/rpc`**): same ANAL thresholds — `ANAL_TIER1_MIN_UI`, `ANAL_TIER2_BOUND_UI`, `ANAL_TIER1_PROMPTS`, `ANAL_TIER2_PROMPTS` still shape `promptLimit` / `tier` on the holder status object (`eligibleForChat` = ≥ min ANAL). For `ALLOWED_ORIGINS` / `CORS_EXTRA_ORIGINS`, see above. If both origin vars are empty, all origins are allowed (dev only).
 3. Deploy. Copy the public **`*.up.railway.app` URL** from Railway into **`website/index.html`** and **`website/lana-talk.html`** as **`CONFIG.API_URL`** (same URL for chat, holder verify, and on-chain helpers). Railway may assign a new hostname (e.g. after recreating the service) — update both files if the API URL changes or the site will call a dead host and show false “CORS” errors.
 
 No `SERVICE` build arg — removed.
@@ -23,16 +23,15 @@ No `SERVICE` build arg — removed.
 
 Home page: on-chain keywords hit `/api/supply`, `/api/holders`, etc.; other messages go to **`POST /api/chat`** (Kimi, AnalX persona). No `wallet` field — **5** turns per refresh (`MAX_USER_CHAT_PROMPTS`).
 
-## Helius holder explorer (`lana-talk.html`)
+## Helius holder chat (`lana-talk.html`)
 
-No Kimi. After wallet verification:
+After wallet verification (≥42,069 ANAL) and optional **`HOLDER_TOOLS_PASSWORD`**:
 
-- **`POST /api/helius/rpc`** — `{ "wallet", "method", "params" }`; methods in `api/helius-rpc-allowlist.js`. **`GET /api/helius/allowed-methods`** lists them.
-- **Enhanced Transactions** (human-readable parses; [Helius docs](https://www.helius.dev/docs/api-reference/enhanced-transactions/overview)):
-  - **`POST /api/helius/enhanced/transactions`** — `{ "wallet", "transactions": [ "sig", ... ], "commitment"?: "finalized"|"confirmed" }` (max 100 sigs). Proxies `POST /v0/transactions` on `api-mainnet.helius-rpc.com`.
-  - **`GET /api/helius/enhanced/addresses/:address/transactions`** — requires **`?wallet=`** (connected holder). Forwards query params `before-signature`, `after-signature`, `type`, `source`, `limit`, `commitment` to Helius.
+- **`POST /api/holder/helius-chat`** — `{ "wallet", "message", "history" }`. **Kimi** + `api/helius-chat-prompt.js`; server injects **Helius** DAS + holder snapshot, and **Jupiter** trending (if `JUPITER_API_KEY` set) when the user asks market/trend-style questions. Tier prompt limits match holder tiers (`ANAL_TIER*_PROMPTS`).
+- **`POST /api/helius/rpc`** — `{ "wallet", "method", "params" }` (allowlisted read-only). **`GET /api/helius/allowed-methods`** lists methods.
+- **Enhanced Transactions** ([Helius docs](https://www.helius.dev/docs/api-reference/enhanced-transactions/overview)): **`POST /api/helius/enhanced/transactions`**, **`GET /api/helius/enhanced/addresses/:address/transactions?wallet=...`**
 
-**Other read-only shortcuts:** `GET /api/wallet/:address/signatures`, `GET /api/tx/:signature`, `POST /api/das/assets-by-owner`.
+**Other read-only shortcuts (password-gated with holder tools):** `GET /api/wallet/:address/signatures`, `GET /api/tx/:signature`, `POST /api/das/assets-by-owner`, `GET /api/account/:address`.
 
 ## Custom domain (`analbylana.xyz`)
 
