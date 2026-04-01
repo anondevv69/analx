@@ -63,7 +63,11 @@ const CHAT_LIMIT_MESSAGE =
     process.env.CHAT_LIMIT_MESSAGE ||
     "Yo — this ain't for full-blown convos, just quick $ANAL / lana.ai banter and facts. Refresh the page if you need a clean slate. DYOR. 🕳️⚡";
 
-const allowedOriginsRaw = (process.env.ALLOWED_ORIGINS || '')
+const allowedOriginsRaw = (
+    (process.env.ALLOWED_ORIGINS || '') +
+    ',' +
+    (process.env.CORS_EXTRA_ORIGINS || '')
+)
     .split(/[,;\n]+/)
     .map((s) => s.trim())
     .filter(Boolean);
@@ -104,18 +108,40 @@ if (allowedOriginsSet) {
     console.log('CORS allowlist (' + allowedOriginsSet.size + ' origins):', [...allowedOriginsSet].sort().join(', '));
 }
 
+/** Fail before Railway edge ~30s timeout so the browser gets JSON + CORS instead of a misleading CORS error on 502 */
+const HELIUS_FETCH_TIMEOUT_MS = Math.min(60000, Math.max(5000, parseInt(process.env.HELIUS_FETCH_TIMEOUT_MS || '12000', 10) || 12000));
+
+async function fetchHeliusRpcJson(rpcBody) {
+    const ctrl = new AbortController();
+    const tid = setTimeout(() => ctrl.abort(), HELIUS_FETCH_TIMEOUT_MS);
+    try {
+        const response = await fetch(`https://mainnet.helius-rpc.com/?api-key=${HELIUS_API_KEY}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(rpcBody),
+            signal: ctrl.signal,
+        });
+        return await response.json();
+    } catch (e) {
+        if (e.name === 'AbortError') {
+            return { __timedOut: true };
+        }
+        throw e;
+    } finally {
+        clearTimeout(tid);
+    }
+}
+
 async function fetchAnalHolderStatus(walletAddress) {
-    const response = await fetch(`https://mainnet.helius-rpc.com/?api-key=${HELIUS_API_KEY}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            jsonrpc: '2.0',
-            id: 1,
-            method: 'getTokenAccountsByOwner',
-            params: [walletAddress, { mint: TOKEN_MINT }, { encoding: 'jsonParsed' }],
-        }),
+    const data = await fetchHeliusRpcJson({
+        jsonrpc: '2.0',
+        id: 1,
+        method: 'getTokenAccountsByOwner',
+        params: [walletAddress, { mint: TOKEN_MINT }, { encoding: 'jsonParsed' }],
     });
-    const data = await response.json();
+    if (data && data.__timedOut) {
+        return { error: 'Helius RPC timed out — try again or check HELIUS_FETCH_TIMEOUT_MS / Railway resources.' };
+    }
     if (data.error) {
         return { error: data.error.message || 'Helius RPC error' };
     }
