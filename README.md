@@ -49,6 +49,18 @@ Create **all** of the following (remove old **A**/**AAAA** records that point so
 | same | **AAAA** | `2606:50c0:8003::153` |
 | `www` | **CNAME** | **`anondevv69.github.io`** (exactly; **no** `/analx` — [per GitHub](https://docs.github.com/en/pages/configuring-a-custom-domain-for-your-github-pages-site/managing-a-custom-domain-for-your-github-pages-site#configuring-a-subdomain)) |
 
+#### Namecheap (DNS only — domain registered there)
+
+1. Log in → **Domain List** → **Manage** next to `analbylana.xyz`.
+2. Open the **Advanced DNS** tab.
+3. Under **Host records**, remove anything that conflicts with GitHub (old **A** records to parking IPs, **URL Redirect** records for `@`/`www` if you want GitHub to serve the site — you can add redirects later from GitHub).
+4. **Add New Record** four times for the apex:
+   - Type **A Record**, **Host** `@`, **Value** `185.199.108.153` (TTL Automatic is fine).
+   - Repeat Host `@` with `185.199.109.153`, `185.199.110.153`, and `185.199.111.153`.
+5. **Add New Record:** Type **CNAME Record**, **Host** `www`, **Value** `anondevv69.github.io` (Namecheap may append a trailing dot — that’s OK).
+6. Optional: add the four **AAAA** rows for Host `@` if Namecheap supports IPv6 on your plan (same values as the table above).
+7. Ensure **Nameservers** are **Namecheap BasicDNS** (or Namecheap Web Hosting DNS) — not a third-party proxy — unless you know you’re managing DNS elsewhere.
+
 **Cloudflare:** set records to **DNS only** (grey cloud), not proxied — orange cloud often breaks GitHub Pages checks.
 
 **CAA:** if you use CAA records, ensure Let’s Encrypt is allowed, e.g. `0 issue "letsencrypt.org"` (see [HTTPS docs](https://docs.github.com/en/pages/getting-started-with-github-pages/securing-your-github-pages-site-with-https)).
