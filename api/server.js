@@ -420,6 +420,70 @@ async function fetchHeliusBalanceJson(address) {
     });
 }
 
+/** DAS getAsset — classifies mint vs NFT vs wallet; see https://www.helius.dev/docs/api-reference/das/getasset */
+async function fetchDasGetAsset(id) {
+    return fetchHeliusRpcJson({
+        jsonrpc: '2.0',
+        id: 1,
+        method: 'getAsset',
+        params: {
+            id,
+            options: { showFungible: true, showCollectionMetadata: true },
+        },
+    });
+}
+
+function isFungibleMintAsset(assetRes) {
+    const iface = assetRes?.result?.interface;
+    return iface === 'FungibleToken' || iface === 'FungibleAsset';
+}
+
+function hasDasAssetResult(assetRes) {
+    return Boolean(
+        assetRes &&
+            !assetRes.__timedOut &&
+            !assetRes.error &&
+            assetRes.result &&
+            assetRes.result.id
+    );
+}
+
+/** GET https://api.helius.xyz/v1/... — Wallet API (beta). Same API key as RPC. */
+async function fetchHeliusWalletApiGet(pathWithQuery) {
+    const ctrl = new AbortController();
+    const tid = setTimeout(() => ctrl.abort(), HELIUS_FETCH_TIMEOUT_MS);
+    const path = pathWithQuery.startsWith('/') ? pathWithQuery : `/${pathWithQuery}`;
+    try {
+        const url = `https://api.helius.xyz${path}`;
+        const response = await fetch(url, {
+            headers: {
+                Accept: 'application/json',
+                'X-Api-Key': HELIUS_API_KEY,
+            },
+            signal: ctrl.signal,
+        });
+        const text = await response.text();
+        if (response.status === 404) {
+            return { __notFound: true };
+        }
+        if (!response.ok) {
+            return { __error: true, status: response.status, snippet: text.slice(0, 400) };
+        }
+        try {
+            return JSON.parse(text);
+        } catch (_) {
+            return { __parseError: true, snippet: text.slice(0, 300) };
+        }
+    } catch (e) {
+        if (e.name === 'AbortError') {
+            return { __timedOut: true };
+        }
+        throw e;
+    } finally {
+        clearTimeout(tid);
+    }
+}
+
 async function fetchEnhancedAddressHistory(address, limit) {
     const lim = Math.min(100, Math.max(1, limit));
     const url = heliusEnhancedUrl(`v0/addresses/${encodeURIComponent(address)}/transactions`, {
@@ -488,8 +552,32 @@ async function fetchPumpFunProgramActivitySample() {
     };
 }
 
+function formatWalletApiContext(identityRes, balancesRes) {
+    let out = '';
+    if (
+        identityRes &&
+        !identityRes.__error &&
+        !identityRes.__timedOut &&
+        !identityRes.__notFound &&
+        identityRes.address
+    ) {
+        out +=
+            '--- Wallet API: identity (Helius, beta) ---\n' +
+            JSON.stringify(identityRes).slice(0, 4000) +
+            '\n';
+    }
+    if (balancesRes && balancesRes.balances && Array.isArray(balancesRes.balances)) {
+        out +=
+            '--- Wallet API: balances (Helius, beta — USD-sorted page) ---\n' +
+            JSON.stringify(balancesRes).slice(0, 12000) +
+            '\n';
+    }
+    return out;
+}
+
 /**
- * Rich CONTEXT: Solscan URL / pasted address → analysis target; DAS + Enhanced history for that target;
+ * Rich CONTEXT: Solscan URL / pasted address → analysis target; DAS getAsset classifies mint vs wallet;
+ * fungible mints → getTokenLargestAccounts + getTokenSupply; wallets → DAS by owner + Wallet API identity/balances;
  * optional Jupiter trending + Pump.fun program sample.
  */
 async function buildHeliusChatContext(sessionWallet, userMessage, holderStatus) {
@@ -508,25 +596,78 @@ async function buildHeliusChatContext(sessionWallet, userMessage, holderStatus) 
 
     const st = holderStatus || (await fetchAnalHolderStatus(sessionWallet));
 
-    const bal = await fetchHeliusBalanceJson(target);
-    const das = await fetchHeliusRpcJson({
-        jsonrpc: '2.0',
-        id: 1,
-        method: 'getAssetsByOwner',
-        params: {
-            ownerAddress: target,
-            page: 1,
-            limit: 25,
-            displayOptions: { showFungible: true, showNativeBalance: true },
-        },
-    });
+    const assetProbe = await fetchDasGetAsset(target);
+    const mintMode = isFungibleMintAsset(assetProbe);
+    const assetResolved = hasDasAssetResult(assetProbe);
+    const assetOnlyMode = assetResolved && !mintMode;
 
     let dasPart = '';
-    if (das && !das.__timedOut && !das.error && das.result) {
-        dasPart = JSON.stringify(das.result).slice(0, 10000);
+    let tokenRpcPart = '';
+    let walletApiPart = '';
+    let bal;
+    let enhancedHistory;
+
+    if (mintMode && assetProbe.result) {
+        dasPart = JSON.stringify(assetProbe.result).slice(0, 12000);
+        const [b, largest, supply, enh] = await Promise.all([
+            fetchHeliusBalanceJson(target),
+            fetchHeliusRpcJson({
+                jsonrpc: '2.0',
+                id: 1,
+                method: 'getTokenLargestAccounts',
+                params: [target],
+            }),
+            fetchHeliusRpcJson({
+                jsonrpc: '2.0',
+                id: 1,
+                method: 'getTokenSupply',
+                params: [target],
+            }),
+            fetchEnhancedAddressHistory(target, 28),
+        ]);
+        bal = b;
+        enhancedHistory = enh;
+        const lOk = largest && !largest.__timedOut && !largest.error;
+        const sOk = supply && !supply.__timedOut && !supply.error;
+        tokenRpcPart =
+            (lOk ? 'getTokenLargestAccounts:\n' + JSON.stringify(largest).slice(0, 8000) + '\n' : '') +
+            (sOk ? 'getTokenSupply:\n' + JSON.stringify(supply).slice(0, 4000) : '');
+    } else if (assetOnlyMode && assetProbe.result) {
+        dasPart = JSON.stringify(assetProbe.result).slice(0, 12000);
+        const [b, enh] = await Promise.all([
+            fetchHeliusBalanceJson(target),
+            fetchEnhancedAddressHistory(target, 28),
+        ]);
+        bal = b;
+        enhancedHistory = enh;
+    } else {
+        const [b, das, enh, wid, wbal] = await Promise.all([
+            fetchHeliusBalanceJson(target),
+            fetchHeliusRpcJson({
+                jsonrpc: '2.0',
+                id: 1,
+                method: 'getAssetsByOwner',
+                params: {
+                    ownerAddress: target,
+                    page: 1,
+                    limit: 25,
+                    displayOptions: { showFungible: true, showNativeBalance: true },
+                },
+            }),
+            fetchEnhancedAddressHistory(target, 28),
+            fetchHeliusWalletApiGet(`/v1/wallet/${encodeURIComponent(target)}/identity`),
+            fetchHeliusWalletApiGet(
+                `/v1/wallet/${encodeURIComponent(target)}/balances?limit=50&page=1&showNfts=false&showNative=true`
+            ),
+        ]);
+        bal = b;
+        enhancedHistory = enh;
+        if (das && !das.__timedOut && !das.error && das.result) {
+            dasPart = JSON.stringify(das.result).slice(0, 10000);
+        }
+        walletApiPart = formatWalletApiContext(wid, wbal);
     }
 
-    const enhancedHistory = await fetchEnhancedAddressHistory(target, 28);
     let enhancedPart = '';
     if (enhancedHistory) {
         const s = JSON.stringify(enhancedHistory);
@@ -553,6 +694,19 @@ async function buildHeliusChatContext(sessionWallet, userMessage, holderStatus) 
     const holderJson = st && !st.error ? JSON.stringify(st, null, 2).slice(0, 4000) : '{}';
     const balStr = formatNativeSolContext(bal);
 
+    const iface = assetProbe?.result?.interface || 'unknown';
+    const targetKind = mintMode
+        ? 'fungible_mint'
+        : assetOnlyMode
+          ? 'das_asset_mint_or_nft'
+          : 'wallet_or_unclassified';
+
+    const dasHeading = mintMode
+        ? 'DAS getAsset (fungible mint — metadata & token_info; price may be cached per Helius)'
+        : assetOnlyMode
+          ? 'DAS getAsset (mint / NFT / asset — not a user wallet inventory)'
+          : 'Wallet assets (Helius DAS getAssetsByOwner, truncated)';
+
     return {
         contextBlock:
             '--- CONNECTED SESSION WALLET (signer / holder) ---\n' +
@@ -564,10 +718,20 @@ async function buildHeliusChatContext(sessionWallet, userMessage, holderStatus) 
             '\n(target_source: ' +
             source +
             ' — explicit = user pasted another address or Solscan URL; session = connected wallet)\n' +
-            '\n--- Native SOL (read-only snapshot) ---\n' +
+            'target_kind: ' +
+            targetKind +
+            ' · DAS interface: ' +
+            iface +
+            '\n\n--- Native SOL (read-only snapshot) ---\n' +
             balStr +
-            '\n\n--- Wallet assets (Helius DAS, truncated) ---\n' +
+            '\n\n--- ' +
+            dasHeading +
+            ' ---\n' +
             dasPart +
+            (tokenRpcPart
+                ? '\n\n--- RPC: largest token accounts + supply (fungible mint) ---\n' + tokenRpcPart
+                : '') +
+            (walletApiPart ? '\n\n' + walletApiPart : '') +
             '\n\n--- Recent transactions (Helius Enhanced API, truncated) ---\n' +
             enhancedPart +
             (trendingPart
