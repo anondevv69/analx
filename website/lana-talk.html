@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Anal chat — $ANAL holder tools | Anal by lana.ai</title>
+    <title>Analbot — $ANAL holder tools | Anal by lana.ai</title>
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Serif:wght@400;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -203,17 +203,18 @@
         <nav aria-label="Site">
             <a href="index.html#story">Story</a>
             <a href="index.html#token">Token</a>
-            <a href="lana-talk.html" aria-current="page">Anal chat</a>
+            <a href="lana-talk.html" aria-current="page">Analbot</a>
         </nav>
     </header>
     <main>
-        <h1>Anal chat</h1>
+        <h1>Analbot</h1>
         <p class="lede">
             For verified <strong>$ANAL</strong> holders (mint
             <span style="font-family:'IBM Plex Mono',monospace;font-size:0.85rem;">95DJix…85DKvHK</span>,
             <strong>≥42,069</strong> ANAL).
-            <strong>Anal chat</strong> is powered by
-            <a class="links" href="https://www.helius.dev/docs" target="_blank" rel="noopener noreferrer">Helius</a>.
+            Paste any Solana <strong>token mint</strong> or <strong>wallet address</strong> — powered by
+            <a class="links" href="https://www.helius.dev/docs" target="_blank" rel="noopener noreferrer">Helius</a>,
+            DexScreener, RugCheck &amp; Jupiter.
             <a class="links" href="index.html#token">Token &amp; lock</a>. DYOR.
         </p>
 
@@ -249,13 +250,13 @@
                 <p class="fine" id="wallet-line"></p>
             </div>
             <div class="card chat-card">
-                <h2>Chat</h2>
+                <h2>Research</h2>
                 <p style="font-size:0.85rem;color:var(--foreground-muted);margin-bottom:0.75rem;">
                     Ask in plain language. Paste a <strong>Solscan</strong> link or any <strong>Solana address</strong> in your message — the server resolves it and loads <strong>Helius</strong> context for that target (your connected wallet is the default when you don’t specify another address).
                 </p>
                 <div id="chat-messages" class="chat-messages" aria-live="polite"></div>
                 <div class="chat-input-row">
-                    <input type="text" id="chat-input" placeholder="Reply…" autocomplete="off" />
+                    <input type="text" id="chat-input" placeholder="Paste a Solana token or wallet address…" autocomplete="off" />
                     <button type="button" class="btn" id="chat-send">Send</button>
                 </div>
             </div>
@@ -404,7 +405,7 @@
             hideTyping();
             chatTypingEl = document.createElement('div');
             chatTypingEl.className = 'chat-msg chat-typing';
-            chatTypingEl.textContent = 'Thinking…';
+            chatTypingEl.textContent = 'Researching…';
             chatMessages.appendChild(chatTypingEl);
             chatScroll();
         }
@@ -548,7 +549,7 @@
                 chatMessages.innerHTML = '';
                 aiHistory = [];
                 appendAssistantMarkdown(
-                    '**Wallet connected.** Chat with **AnalX** here — replies use **Helius** data loaded for your message (mention another address or Solscan link anytime).'
+                    '**Wallet connected.** Paste any Solana **token mint** or **wallet address** below to get a full research report — grade, deployer info, top holders, price action, RugCheck, and smart follow-up suggestions.'
                 );
             }
             panelTools.classList.remove('hidden');

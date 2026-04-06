@@ -9,6 +9,13 @@ const { READ_ONLY_RPC_METHODS } = require('./helius-rpc-allowlist');
 const HELIUS_API_KEY = process.env.HELIUS_API_KEY;
 const KIMI_API_KEY = (process.env.KIMI_API_KEY || '').trim();
 const JUPITER_API_KEY = (process.env.JUPITER_API_KEY || '').trim();
+
+/** Analbot research engine — replaces LLM chat for holder tools.
+ *  ANALBOT_URL: deployed Railway URL, e.g. https://analbot-production-xxxx.up.railway.app
+ *  ANALBOT_API_KEY: must match ANALBOT_API_KEY env var on the Analbot service
+ */
+const ANALBOT_URL = (process.env.ANALBOT_URL || '').trim().replace(/\/$/, '');
+const ANALBOT_API_KEY = (process.env.ANALBOT_API_KEY || '').trim();
 const TOKEN_MINT = process.env.TOKEN_MINT || '95DJixZhoy898shqxoZy5riztdf95fTqLXBog85DKvHK';
 /** OpenAI-compatible chat completions URL. Kimi consumer vs Moonshot platform use different hosts — see README. */
 const KIMI_API_URL = (
@@ -1119,7 +1126,12 @@ app.post('/api/helius/rpc', requireHolderToolsPassword, async (req, res) => {
     }
 });
 
-/** Kimi + Helius/Jupiter CONTEXT — holder tier limits; requires X-Holder-Tools-Password when HOLDER_TOOLS_PASSWORD is set */
+/**
+ * Analbot research engine — holder-gated research for any Solana token or wallet address.
+ * Forwards the query to the Analbot /v1/query endpoint instead of an LLM.
+ * Body: { wallet, message, history? }
+ * Response: { response: string, promptRemaining, promptLimit, tier }
+ */
 app.post('/api/holder/helius-chat', requireHolderToolsPassword, async (req, res) => {
     try {
         const { wallet, message, history } = req.body || {};
@@ -1147,6 +1159,7 @@ app.post('/api/holder/helius-chat', requireHolderToolsPassword, async (req, res)
             });
         }
 
+        // Prompt-limit tracking (keeps same tier/history semantics as before)
         const prior = normalizeHistory(history);
         const userTurnsInHistory = prior.filter((m) => m.role === 'user').length;
         const promptLimit = st.promptLimit || ANAL_TIER1_PROMPTS;
@@ -1155,59 +1168,71 @@ app.post('/api/holder/helius-chat', requireHolderToolsPassword, async (req, res)
                 error: 'chat_limit',
                 message:
                     process.env.HELIUS_CHAT_LIMIT_MESSAGE ||
-                    'Message limit reached for your tier. Refresh the page to reset. DYOR.',
+                    'Research limit reached for your tier. Refresh the page to reset.',
                 limit: promptLimit,
             });
         }
 
-        const { contextBlock } = await buildHeliusChatContext(g.wallet, userMessage, st);
-
-        const systemContent =
-            HELIUS_CHAT_SYSTEM_PROMPT +
-            '\n\n--- CONTEXT (real data for this request; may be partial) ---\n' +
-            contextBlock;
-
-        const kimiMaxTokens = Math.min(
-            4096,
-            parseInt(process.env.KIMI_MAX_TOKENS_HELIUS_CHAT || '2048', 10) || 2048
-        );
-
-        const messages = [
-            { role: 'system', content: systemContent },
-            ...prior,
-            { role: 'user', content: userMessage },
-        ];
-
-        const response = await postOpenAiCompatibleChat(messages, kimiMaxTokens);
-
-        const parsed = await parseKimiChatResponse(response);
-        if (!parsed.ok) {
-            console.error(
-                'Helius chat LLM failure:',
-                parsed.status,
-                parsed.error,
-                parsed.snippet || parsed.message
-            );
-            return res.status(502).json({
-                error: 'kimi_unavailable',
-                message: parsed.message,
-                detail: parsed.error,
+        // Require Analbot to be configured
+        if (!ANALBOT_URL || !ANALBOT_API_KEY) {
+            return res.status(503).json({
+                error: 'analbot_not_configured',
+                message:
+                    'ANALBOT_URL and ANALBOT_API_KEY are not set on this service. ' +
+                    'Add them in Railway → Variables and redeploy.',
             });
         }
-        const data = parsed.data;
 
-        if (data.choices && data.choices[0]) {
-            return res.json({
-                response: data.choices[0].message.content,
-                timestamp: new Date().toISOString(),
-                promptRemaining: Math.max(0, promptLimit - userTurnsInHistory - 1),
-                promptLimit,
-                tier: st.tier,
+        // Forward to Analbot's secured research endpoint
+        const ctrl = new AbortController();
+        const tid = setTimeout(() => ctrl.abort(), 90000);
+        let analRes;
+        try {
+            const r = await fetch(`${ANALBOT_URL}/v1/query`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${ANALBOT_API_KEY}`,
+                },
+                body: JSON.stringify({ q: userMessage }),
+                signal: ctrl.signal,
             });
+            const text = await r.text();
+            try {
+                analRes = JSON.parse(text);
+            } catch (_) {
+                return res.status(502).json({ error: 'analbot_bad_json', message: text.slice(0, 400) });
+            }
+            if (!r.ok) {
+                return res.status(502).json({
+                    error: 'analbot_error',
+                    message: analRes.message || analRes.error || 'Research failed.',
+                });
+            }
+        } catch (e) {
+            if (e.name === 'AbortError') {
+                return res.status(504).json({
+                    error: 'analbot_timeout',
+                    message: 'Research timed out — try again.',
+                });
+            }
+            return res.status(502).json({ error: 'analbot_unreachable', message: e.message });
+        } finally {
+            clearTimeout(tid);
         }
-        return res.status(502).json({ error: 'invalid_ai_response', details: data });
+
+        // analRes.message = full Telegram-formatted research text (Markdown)
+        const responseText = analRes.message || '(No response from research engine)';
+
+        return res.json({
+            response: responseText,
+            timestamp: new Date().toISOString(),
+            promptRemaining: Math.max(0, promptLimit - userTurnsInHistory - 1),
+            promptLimit,
+            tier: st.tier,
+        });
     } catch (error) {
-        console.error('Helius chat error:', error);
+        console.error('Research endpoint error:', error);
         res.status(500).json({ error: error.message });
     }
 });
