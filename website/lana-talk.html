@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Analbot — $ANAL holder tools | Anal by lana.ai</title>
+    <title>Analbot — Solana research | Anal by lana.ai</title>
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Serif:wght@400;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -55,6 +55,8 @@
             letter-spacing: -0.02em;
         }
         .lede { color: var(--foreground-muted); font-size: 0.95rem; margin-bottom: 2rem; }
+        .lede a { color: var(--primary); font-weight: 600; text-decoration: none; }
+        .lede a:hover { text-decoration: underline; }
         .card {
             background: var(--background-card);
             border: 1px solid var(--border);
@@ -76,40 +78,14 @@
             font-size: 0.95rem;
         }
         .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-        .btn-secondary {
-            background: transparent;
-            color: var(--primary);
-            border: 1px solid var(--primary);
-        }
-        .status { font-size: 0.9rem; color: var(--foreground-muted); margin-top: 1rem; }
-        .status.error { color: #f87171; }
-        .status.ok { color: var(--primary); }
-        .hidden { display: none !important; }
-        .tools-grid { display: grid; gap: 0.75rem; }
-        .tool-btn {
-            text-align: left;
-            background: var(--background-secondary);
-            border: 1px solid var(--border);
-            color: var(--foreground);
-            padding: 0.85rem 1rem;
-            border-radius: 0.5rem;
-            cursor: pointer;
-            font-family: inherit;
-            font-size: 0.9rem;
-        }
-        .tool-btn:hover { border-color: var(--primary); color: var(--primary); }
-        .links a { color: var(--primary); font-weight: 600; }
-        .fine { font-size: 0.8rem; color: var(--foreground-tertiary); margin-top: 1rem; }
         .chat-input-row { display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; }
-        .holder-strip p { margin: 0.2rem 0; font-size: 0.9rem; }
-        .chat-card h2 { margin-bottom: 0.35rem; }
         .chat-messages {
             background: var(--background-secondary);
             border: 1px solid var(--border);
             border-radius: 0.5rem;
             padding: 0.75rem;
             min-height: 220px;
-            max-height: min(52vh, 420px);
+            max-height: min(60vh, 520px);
             overflow-y: auto;
             margin-bottom: 0.75rem;
         }
@@ -128,58 +104,30 @@
             text-align: left;
             max-width: 100%;
             word-break: break-word;
-        }
-        .chat-msg-assistant pre {
-            margin: 0;
-            padding: 0.75rem;
-            background: #0a100e;
-            border-radius: 0.45rem;
             font-family: 'IBM Plex Mono', monospace;
-            font-size: 0.7rem;
-            overflow-x: auto;
-            white-space: pre-wrap;
-            word-break: break-word;
-            color: var(--foreground-muted);
-            max-height: 360px;
-            overflow-y: auto;
-        }
-        .chat-msg-system {
             font-size: 0.82rem;
-            color: var(--foreground-tertiary);
-            font-style: italic;
-        }
-        #chat-input {
-            flex: 1;
-            min-width: 140px;
-            background: #0a100e;
-            border: 1px solid var(--border);
-            border-radius: 0.5rem;
-            padding: 0.65rem 0.75rem;
-            color: var(--foreground);
-            font-family: inherit;
-            font-size: 0.9rem;
         }
         .chat-msg-assistant .md-content {
             font-size: 0.88rem;
-            line-height: 1.55;
+            line-height: 1.6;
             color: var(--foreground-muted);
         }
         .chat-msg-assistant .md-content h1,
         .chat-msg-assistant .md-content h2,
         .chat-msg-assistant .md-content h3 {
-            font-size: 1.05rem;
+            font-size: 1rem;
             margin: 0.85rem 0 0.4rem;
             color: var(--foreground);
             font-family: 'IBM Plex Serif', serif;
         }
         .chat-msg-assistant .md-content h1:first-child,
         .chat-msg-assistant .md-content h2:first-child { margin-top: 0; }
-        .chat-msg-assistant .md-content p { margin: 0.5rem 0; }
+        .chat-msg-assistant .md-content p { margin: 0.4rem 0; }
         .chat-msg-assistant .md-content ul, .chat-msg-assistant .md-content ol {
-            margin: 0.5rem 0 0.5rem 1.15rem;
+            margin: 0.4rem 0 0.4rem 1.15rem;
         }
         .chat-msg-assistant .md-content code {
-            font-size: 0.85em;
+            font-size: 0.83em;
             background: rgba(0,0,0,0.35);
             padding: 0.12em 0.4em;
             border-radius: 0.25rem;
@@ -193,7 +141,37 @@
             font-size: 0.72rem;
             margin: 0.5rem 0;
         }
+        .chat-msg-assistant .md-content a { color: var(--primary); }
+        .chat-msg-assistant .md-content hr {
+            border: none;
+            border-top: 1px solid var(--border);
+            margin: 0.75rem 0;
+        }
+        .chat-msg-system {
+            font-size: 0.82rem;
+            color: var(--foreground-tertiary);
+            font-style: italic;
+        }
         .chat-typing { color: var(--foreground-tertiary); font-size: 0.9rem; padding: 0.35rem 0; }
+        #chat-input {
+            flex: 1;
+            min-width: 140px;
+            background: #0a100e;
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            padding: 0.65rem 0.75rem;
+            color: var(--foreground);
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 0.88rem;
+        }
+        #chat-input:focus { outline: none; border-color: var(--primary); }
+        .powered-by {
+            font-size: 0.8rem;
+            color: var(--foreground-tertiary);
+            text-align: center;
+            margin-top: 2rem;
+        }
+        .powered-by a { color: var(--primary); text-decoration: none; font-weight: 600; }
     </style>
 </head>
 <body>
@@ -209,158 +187,32 @@
     <main>
         <h1>Analbot</h1>
         <p class="lede">
-            For verified <strong>$ANAL</strong> holders (mint
-            <span style="font-family:'IBM Plex Mono',monospace;font-size:0.85rem;">95DJix…85DKvHK</span>,
-            <strong>≥42,069</strong> ANAL).
-            Paste any Solana <strong>token mint</strong> or <strong>wallet address</strong> — powered by
-            <a class="links" href="https://www.helius.dev/docs" target="_blank" rel="noopener noreferrer">Helius</a>,
-            DexScreener, RugCheck &amp; Jupiter.
-            <a class="links" href="index.html#token">Token &amp; lock</a>. DYOR.
+            Paste any Solana <strong>token mint</strong> or <strong>wallet address</strong> to get a full on-chain research report.
+            Grade, deployer, top holders, price action, RugCheck, lock analysis, and smart follow-up suggestions —
+            powered by <a href="https://www.helius.dev/docs" target="_blank" rel="noopener noreferrer">Helius</a>,
+            DexScreener, RugCheck &amp; Jupiter. DYOR.
         </p>
 
-        <div id="panel-gate" class="card hidden">
-            <h2>Password</h2>
-            <p style="font-size:0.9rem;color:var(--foreground-muted);margin-bottom:1rem;">Holder tools are locked while we work on them.</p>
-            <input type="password" id="gate-password" autocomplete="current-password" placeholder="Password" aria-label="Tools password"
-                style="width:100%;max-width:320px;padding:0.65rem 0.75rem;border-radius:0.5rem;border:1px solid var(--border);background:var(--background-secondary);color:var(--foreground);display:block;margin-bottom:0.75rem;font-family:inherit;font-size:0.95rem;" />
-            <button type="button" class="btn" id="btn-gate-unlock">Unlock</button>
-            <p class="status error" id="gate-status" style="margin-top:0.75rem;"></p>
-        </div>
-
-        <div id="panel-connect" class="card">
-            <h2>Wallet</h2>
-            <p style="font-size:0.9rem;color:var(--foreground-muted);margin-bottom:1rem;">
-                Use <strong>Phantom</strong> (or another wallet that injects <code style="font-size:0.8rem;">window.solana</code>).
-            </p>
-            <button type="button" class="btn" id="btn-connect">Connect wallet</button>
-            <button type="button" class="btn btn-secondary hidden" id="btn-disconnect">Disconnect</button>
-            <div class="status" id="connect-status"></div>
-        </div>
-
-        <div id="panel-denied" class="card hidden">
-            <h2>Not detected as a holder</h2>
-            <p class="status error" id="denied-text"></p>
-            <p class="fine">You can still use the <a href="index.html#story" class="links">home page</a> when the API is up.</p>
-        </div>
-
-        <div id="panel-tools" class="hidden">
-            <div class="card holder-strip">
-                <p class="status ok" id="holder-line"></p>
-                <p class="fine" id="tier-line"></p>
-                <p class="fine" id="wallet-line"></p>
-            </div>
-            <div class="card chat-card">
-                <h2>Research</h2>
-                <p style="font-size:0.85rem;color:var(--foreground-muted);margin-bottom:0.75rem;">
-                    Ask in plain language. Paste a <strong>Solscan</strong> link or any <strong>Solana address</strong> in your message — the server resolves it and loads <strong>Helius</strong> context for that target (your connected wallet is the default when you don’t specify another address).
-                </p>
-                <div id="chat-messages" class="chat-messages" aria-live="polite"></div>
-                <div class="chat-input-row">
-                    <input type="text" id="chat-input" placeholder="Paste a Solana token or wallet address…" autocomplete="off" />
-                    <button type="button" class="btn" id="chat-send">Send</button>
-                </div>
+        <div class="card">
+            <h2>Research</h2>
+            <div id="chat-messages" class="chat-messages" aria-live="polite"></div>
+            <div class="chat-input-row">
+                <input type="text" id="chat-input" placeholder="Paste a Solana token or wallet address…" autocomplete="off" spellcheck="false" />
+                <button type="button" class="btn" id="chat-send">Research</button>
             </div>
         </div>
+
+        <p class="powered-by">Powered by <a href="https://analbylana.xyz" target="_blank" rel="noopener noreferrer">$ANAL</a></p>
     </main>
+
     <script src="https://cdn.jsdelivr.net/npm/marked@12.0.0/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.8/dist/purify.min.js"></script>
     <script>
         const CONFIG = { API_URL: 'https://analx-production-76f1.up.railway.app' };
-        const MINT_SHORT = '95DJixZhoy898shqxoZy5riztdf95fTqLXBog85DKvHK';
-        const HOLDER_TOOLS_PW_KEY = 'anal_holder_tools_pw';
 
-        function authHeaders(extra) {
-            const h = Object.assign({}, extra);
-            const p = sessionStorage.getItem(HOLDER_TOOLS_PW_KEY);
-            if (p) {
-                h['X-Holder-Tools-Password'] = p;
-            }
-            return h;
-        }
-
-        function onHolderToolsUnauthorized() {
-            sessionStorage.removeItem(HOLDER_TOOLS_PW_KEY);
-            const gate = document.getElementById('panel-gate');
-            const connect = document.getElementById('panel-connect');
-            const tools = document.getElementById('panel-tools');
-            const denied = document.getElementById('panel-denied');
-            if (gate) gate.classList.remove('hidden');
-            if (connect) connect.classList.add('hidden');
-            if (tools) tools.classList.add('hidden');
-            if (denied) denied.classList.add('hidden');
-            const gs = document.getElementById('gate-status');
-            if (gs) {
-                gs.textContent = 'Password required or session expired — unlock again.';
-                gs.classList.add('error');
-            }
-        }
-
-        async function initHolderToolsGate() {
-            const gate = document.getElementById('panel-gate');
-            const connect = document.getElementById('panel-connect');
-            const gs = document.getElementById('gate-status');
-            if (!gate || !connect) return;
-
-            let s;
-            try {
-                const r = await fetch(CONFIG.API_URL + '/api/holder-tools/status', {
-                    cache: 'no-store',
-                });
-                if (!r.ok) {
-                    throw new Error('HTTP ' + r.status);
-                }
-                s = await r.json();
-            } catch (e) {
-                /* CORS / network: previously we returned silently and the wallet panel stayed visible — looked like “password off” */
-                gate.classList.remove('hidden');
-                connect.classList.add('hidden');
-                if (gs) {
-                    gs.textContent =
-                        'Could not load tool settings (' +
-                        (e && e.message ? e.message : 'network error') +
-                        '). If this site is on analbylana.xyz, add https://analbylana.xyz and https://www.analbylana.xyz to Railway ALLOWED_ORIGINS or CORS_EXTRA_ORIGINS, redeploy the API, then refresh. (Browser blocks cross-origin calls until the API allows this origin.)';
-                    gs.classList.add('error');
-                }
-                return;
-            }
-
-            if (gs) {
-                gs.textContent = '';
-                gs.classList.remove('error');
-            }
-
-            if (!s || !s.passwordRequired) {
-                gate.classList.add('hidden');
-                connect.classList.remove('hidden');
-                return;
-            }
-            if (sessionStorage.getItem(HOLDER_TOOLS_PW_KEY)) {
-                gate.classList.add('hidden');
-                connect.classList.remove('hidden');
-                return;
-            }
-            gate.classList.remove('hidden');
-            connect.classList.add('hidden');
-        }
-
-        const btnConnect = document.getElementById('btn-connect');
-        const btnDisconnect = document.getElementById('btn-disconnect');
-        const connectStatus = document.getElementById('connect-status');
-        const panelDenied = document.getElementById('panel-denied');
-        const deniedText = document.getElementById('denied-text');
-        const panelTools = document.getElementById('panel-tools');
-        const holderLine = document.getElementById('holder-line');
-        const tierLine = document.getElementById('tier-line');
-        const walletLine = document.getElementById('wallet-line');
         const chatMessages = document.getElementById('chat-messages');
         const chatInput = document.getElementById('chat-input');
         const chatSend = document.getElementById('chat-send');
-        const btnGateUnlock = document.getElementById('btn-gate-unlock');
-        const gatePassword = document.getElementById('gate-password');
-        const gateStatus = document.getElementById('gate-status');
-
-        let publicKey = null;
-        let aiHistory = [];
         let chatTypingEl = null;
 
         function chatScroll() {
@@ -387,8 +239,7 @@
             try {
                 if (typeof marked !== 'undefined' && marked.parse) {
                     const raw = marked.parse(String(text), { breaks: true });
-                    inner.innerHTML =
-                        typeof DOMPurify !== 'undefined' ? DOMPurify.sanitize(raw) : raw;
+                    inner.innerHTML = typeof DOMPurify !== 'undefined' ? DOMPurify.sanitize(raw) : raw;
                 } else {
                     inner.textContent = text;
                 }
@@ -417,15 +268,6 @@
             chatTypingEl = null;
         }
 
-        function appendSystem(text) {
-            if (!chatMessages) return;
-            const d = document.createElement('div');
-            d.className = 'chat-msg chat-msg-system';
-            d.textContent = text;
-            chatMessages.appendChild(d);
-            chatScroll();
-        }
-
         function abortAfter(ms) {
             if (typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function') {
                 return AbortSignal.timeout(ms);
@@ -435,149 +277,19 @@
             return c.signal;
         }
 
-        function getProvider() {
-            return window.solana || window.phantom?.solana;
-        }
-
-        async function verifyHolder(address) {
-            let r;
-            try {
-                r = await fetch(CONFIG.API_URL + '/api/holder/anal/' + encodeURIComponent(address), {
-                    signal: abortAfter(25000),
-                    headers: authHeaders(),
-                });
-            } catch (e) {
-                if (e.name === 'AbortError') {
-                    throw new Error(
-                        'Request timed out. The API may be cold or overloaded — try again, or open your Railway service / logs.'
-                    );
-                }
-                if (e.message === 'Failed to fetch' || String(e).indexOf('Failed to fetch') !== -1) {
-                    throw new Error(
-                        'Could not reach the API. A 502 from Railway often shows as “CORS” in the browser. Fix: ensure the service is running, redeploy, and set ALLOWED_ORIGINS (or CORS_EXTRA_ORIGINS) to include https://analbylana.xyz and https://www.analbylana.xyz. Your wallet balance is unrelated until the API responds.'
-                    );
-                }
-                throw e;
-            }
-            const text = await r.text();
-            if (r.status === 401) {
-                onHolderToolsUnauthorized();
-                throw new Error('Unlock holder tools with the password first.');
-            }
-            if (!r.ok) {
-                try {
-                    const err = JSON.parse(text);
-                    throw new Error(err.error || text);
-                } catch (e) {
-                    if (e.message && e.message !== text) throw e;
-                    throw new Error('HTTP ' + r.status + ' ' + text.slice(0, 120));
-                }
-            }
-            return JSON.parse(text);
-        }
-
-        async function runVerifyFlow() {
-            connectStatus.textContent = '';
-            panelDenied.classList.add('hidden');
-            panelTools.classList.add('hidden');
-            deniedText.textContent = '';
-
-            const provider = getProvider();
-            if (!provider) {
-                connectStatus.textContent = 'No Solana wallet found. Install Phantom or open this page in a supported browser.';
-                connectStatus.classList.add('error');
-                return;
-            }
-
-            try {
-                const resp = await provider.connect();
-                publicKey = resp.publicKey.toString();
-            } catch (e) {
-                connectStatus.textContent = e.message || 'Connection cancelled.';
-                connectStatus.classList.add('error');
-                return;
-            }
-
-            btnConnect.classList.add('hidden');
-            btnDisconnect.classList.remove('hidden');
-            connectStatus.textContent = 'Checking ' + publicKey.slice(0, 4) + '…' + publicKey.slice(-4) + ' on-chain…';
-            connectStatus.classList.remove('error');
-
-            let data;
-            try {
-                data = await verifyHolder(publicKey);
-            } catch (e) {
-                console.error(e);
-                connectStatus.textContent = '';
-                connectStatus.classList.add('error');
-                panelDenied.classList.remove('hidden');
-                deniedText.textContent = 'Could not verify: ' + (e.message || String(e));
-                btnConnect.classList.remove('hidden');
-                btnDisconnect.classList.add('hidden');
-                return;
-            }
-
-            connectStatus.textContent = '';
-
-            if (!data.isHolder) {
-                panelDenied.classList.remove('hidden');
-                deniedText.textContent =
-                    'No $ANAL balance found for this wallet for mint ' + MINT_SHORT + '.';
-                btnConnect.classList.remove('hidden');
-                btnDisconnect.classList.add('hidden');
-                return;
-            }
-
-            if (!data.eligibleForChat) {
-                panelDenied.classList.remove('hidden');
-                deniedText.textContent =
-                    'You hold $ANAL but need at least ' +
-                    (data.minAnalForChatUi != null ? Number(data.minAnalForChatUi).toLocaleString() : '42,069') +
-                    ' ANAL to unlock holder tools on this page.';
-                btnConnect.classList.remove('hidden');
-                btnDisconnect.classList.add('hidden');
-                return;
-            }
-
-            holderLine.textContent =
-                'Balance: ~' +
-                (data.uiAmount != null ? Number(data.uiAmount).toLocaleString(undefined, { maximumFractionDigits: 4 }) : '?') +
-                ' ANAL.';
-            tierLine.textContent = 'Tier ' + (data.tier || '?') + ' · min 42,069 ANAL';
-            walletLine.textContent = 'Wallet: ' + publicKey;
-            if (chatMessages) {
-                chatMessages.innerHTML = '';
-                aiHistory = [];
-                appendAssistantMarkdown(
-                    '**Wallet connected.** Paste any Solana **token mint** or **wallet address** below to get a full research report — grade, deployer info, top holders, price action, RugCheck, and smart follow-up suggestions.'
-                );
-            }
-            panelTools.classList.remove('hidden');
-        }
-
-        async function sendHeliusChat() {
-            if (!publicKey) {
-                appendSystem('Connect a wallet first.');
-                return;
-            }
+        async function sendResearch() {
             if (!chatInput || !chatSend) return;
             const text = chatInput.value.trim();
             if (!text) return;
             chatInput.value = '';
             appendUser(text);
-            const priorForApi = aiHistory.slice();
-            aiHistory.push({ role: 'user', content: text });
             showTyping();
             chatSend.disabled = true;
             try {
-                const r = await fetch(CONFIG.API_URL + '/api/holder/helius-chat', {
+                const r = await fetch(CONFIG.API_URL + '/api/research', {
                     method: 'POST',
-                    headers: authHeaders({ 'Content-Type': 'application/json' }),
-                    body: JSON.stringify({
-                        wallet: publicKey,
-                        message: text,
-                        history: priorForApi,
-                    }),
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: text }),
                     signal: abortAfter(120000),
                 });
                 hideTyping();
@@ -587,102 +299,35 @@
                     data = JSON.parse(bodyText);
                 } catch (_) {
                     appendAssistantMarkdown('Invalid response from server.');
-                    aiHistory.pop();
-                    return;
-                }
-                if (r.status === 401) {
-                    onHolderToolsUnauthorized();
-                    aiHistory.pop();
-                    return;
-                }
-                if (r.status === 429) {
-                    appendAssistantMarkdown(data.message || 'Message limit reached for your tier.');
-                    aiHistory.pop();
                     return;
                 }
                 if (!r.ok) {
-                    const errMsg =
-                        data.message ||
-                        (data.detail && data.error ? `${data.error}: ${data.detail}` : null) ||
-                        data.error ||
-                        bodyText ||
-                        'Request failed';
-                    appendAssistantMarkdown(errMsg);
-                    aiHistory.pop();
+                    const errMsg = data.message || data.error || bodyText || 'Request failed';
+                    appendAssistantMarkdown('**Error:** ' + errMsg);
                     return;
                 }
-                aiHistory.push({ role: 'assistant', content: data.response });
                 appendAssistantMarkdown(data.response);
             } catch (e) {
                 hideTyping();
                 appendAssistantMarkdown('**Error:** ' + (e.message || String(e)));
-                aiHistory.pop();
             } finally {
                 chatSend.disabled = false;
+                if (chatInput) chatInput.focus();
             }
         }
 
-        btnConnect.addEventListener('click', function () {
-            runVerifyFlow();
-        });
+        // Welcome message
+        appendAssistantMarkdown(
+            '**Welcome to Analbot.**\n\nPaste any Solana token mint or wallet address to get a full research report — grade, deployer info, top holders, price action, lock analysis, RugCheck score, and smart follow-up suggestions.\n\n_Powered by [$ANAL](https://analbylana.xyz)_'
+        );
 
-        btnDisconnect.addEventListener('click', async function () {
-            const provider = getProvider();
-            try {
-                if (provider && provider.disconnect) await provider.disconnect();
-            } catch (_) {}
-            publicKey = null;
-            btnConnect.classList.remove('hidden');
-            btnDisconnect.classList.add('hidden');
-            panelTools.classList.add('hidden');
-            panelDenied.classList.add('hidden');
-            connectStatus.textContent = '';
-            if (chatMessages) chatMessages.innerHTML = '';
-            aiHistory = [];
-        });
-
-        if (chatSend && chatInput) {
-            chatSend.addEventListener('click', sendHeliusChat);
-            chatInput.addEventListener('keydown', function (e) {
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    sendHeliusChat();
-                }
-            });
-        }
-
-        if (btnGateUnlock && gatePassword && gateStatus) {
-            async function tryGateUnlock() {
-                gateStatus.textContent = '';
-                gateStatus.classList.remove('error');
-                const pw = gatePassword.value;
-                try {
-                    const r = await fetch(CONFIG.API_URL + '/api/holder-tools/auth', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ password: pw }),
-                    });
-                    if (!r.ok) {
-                        gateStatus.textContent = 'Wrong password.';
-                        gateStatus.classList.add('error');
-                        return;
-                    }
-                    sessionStorage.setItem(HOLDER_TOOLS_PW_KEY, pw);
-                    gatePassword.value = '';
-                    document.getElementById('panel-gate').classList.add('hidden');
-                    document.getElementById('panel-connect').classList.remove('hidden');
-                } catch (e) {
-                    gateStatus.textContent = e.message || String(e);
-                    gateStatus.classList.add('error');
-                }
+        chatSend.addEventListener('click', sendResearch);
+        chatInput.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                sendResearch();
             }
-            btnGateUnlock.addEventListener('click', tryGateUnlock);
-            gatePassword.addEventListener('keydown', function (e) {
-                if (e.key === 'Enter') tryGateUnlock();
-            });
-        }
-
-        initHolderToolsGate();
+        });
     </script>
 </body>
 </html>

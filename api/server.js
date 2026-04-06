@@ -1127,18 +1127,13 @@ app.post('/api/helius/rpc', requireHolderToolsPassword, async (req, res) => {
 });
 
 /**
- * Analbot research engine — holder-gated research for any Solana token or wallet address.
- * Forwards the query to the Analbot /v1/query endpoint instead of an LLM.
- * Body: { wallet, message, history? }
- * Response: { response: string, promptRemaining, promptLimit, tier }
+ * Core research handler — proxies a query to Analbot's /v1/query.
+ * No ANAL holder requirement. Open to all.
  */
-app.post('/api/holder/helius-chat', requireHolderToolsPassword, async (req, res) => {
+async function handleResearch(req, res) {
     try {
-        const { wallet, message, history } = req.body || {};
-        const g = await gateHolderWallet(wallet);
-        if (!g.ok) {
-            return res.status(g.status).json(g.body);
-        }
+        // Accept { message } (new) or { message, wallet, history } (legacy shape)
+        const { message } = req.body || {};
 
         if (!message || typeof message !== 'string') {
             return res.status(400).json({ error: 'message required' });
@@ -1148,32 +1143,6 @@ app.post('/api/holder/helius-chat', requireHolderToolsPassword, async (req, res)
             return res.status(400).json({ error: 'message required' });
         }
 
-        const st = await fetchAnalHolderStatus(g.wallet);
-        if (st.error) {
-            return res.status(502).json({ error: st.error });
-        }
-        if (!st.eligibleForChat) {
-            return res.status(403).json({
-                error: 'insufficient_anal',
-                minAnalForChatUi: ANAL_TIER1_MIN_UI,
-            });
-        }
-
-        // Prompt-limit tracking (keeps same tier/history semantics as before)
-        const prior = normalizeHistory(history);
-        const userTurnsInHistory = prior.filter((m) => m.role === 'user').length;
-        const promptLimit = st.promptLimit || ANAL_TIER1_PROMPTS;
-        if (userTurnsInHistory >= promptLimit) {
-            return res.status(429).json({
-                error: 'chat_limit',
-                message:
-                    process.env.HELIUS_CHAT_LIMIT_MESSAGE ||
-                    'Research limit reached for your tier. Refresh the page to reset.',
-                limit: promptLimit,
-            });
-        }
-
-        // Require Analbot to be configured
         if (!ANALBOT_URL || !ANALBOT_API_KEY) {
             return res.status(503).json({
                 error: 'analbot_not_configured',
@@ -1183,7 +1152,6 @@ app.post('/api/holder/helius-chat', requireHolderToolsPassword, async (req, res)
             });
         }
 
-        // Forward to Analbot's secured research endpoint
         const ctrl = new AbortController();
         const tid = setTimeout(() => ctrl.abort(), 90000);
         let analRes;
@@ -1211,31 +1179,28 @@ app.post('/api/holder/helius-chat', requireHolderToolsPassword, async (req, res)
             }
         } catch (e) {
             if (e.name === 'AbortError') {
-                return res.status(504).json({
-                    error: 'analbot_timeout',
-                    message: 'Research timed out — try again.',
-                });
+                return res.status(504).json({ error: 'analbot_timeout', message: 'Research timed out — try again.' });
             }
             return res.status(502).json({ error: 'analbot_unreachable', message: e.message });
         } finally {
             clearTimeout(tid);
         }
 
-        // analRes.message = full Telegram-formatted research text (Markdown)
-        const responseText = analRes.message || '(No response from research engine)';
-
         return res.json({
-            response: responseText,
+            response: analRes.message || '(No response from research engine)',
             timestamp: new Date().toISOString(),
-            promptRemaining: Math.max(0, promptLimit - userTurnsInHistory - 1),
-            promptLimit,
-            tier: st.tier,
         });
     } catch (error) {
         console.error('Research endpoint error:', error);
         res.status(500).json({ error: error.message });
     }
-});
+}
+
+// Primary open endpoint
+app.post('/api/research', handleResearch);
+
+// Legacy alias — kept for backward compat, no longer gated
+app.post('/api/holder/helius-chat', handleResearch);
 
 app.post('/api/chat', async (req, res) => {
     try {
