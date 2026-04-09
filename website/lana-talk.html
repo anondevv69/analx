@@ -3,20 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Analbot — Solana research | Anal by lana.ai</title>
-    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Serif:wght@400;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <title>Analbot on Telegram | Anal by lana.ai</title>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Serif:wght@400;600&display=swap" rel="stylesheet">
     <style>
         :root {
             --primary: #45b399;
             --primary-dark: #3a9a82;
             --background: #060c0a;
             --background-card: #0c110f;
-            --background-secondary: #131a17;
             --foreground: #e8edeb;
             --foreground-muted: #9ba7a3;
             --foreground-tertiary: #5a6663;
             --border: rgba(255,255,255,0.09);
-            --accent: #ec4899;
         }
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -47,129 +45,88 @@
         nav { display: flex; gap: 1.25rem; flex-wrap: wrap; }
         nav a { color: var(--foreground-muted); text-decoration: none; font-size: 0.9rem; font-weight: 500; }
         nav a:hover { color: var(--primary); }
-        main { max-width: 720px; margin: 0 auto; padding: 5.5rem 5% 4rem; }
+        main { max-width: 640px; margin: 0 auto; padding: 5rem 5% 4rem; }
         h1 {
             font-family: 'IBM Plex Serif', serif;
-            font-size: clamp(1.75rem, 5vw, 2.25rem);
-            margin-bottom: 0.5rem;
+            font-size: clamp(1.85rem, 5vw, 2.35rem);
+            margin-bottom: 0.75rem;
             letter-spacing: -0.02em;
         }
-        .lede { color: var(--foreground-muted); font-size: 0.95rem; margin-bottom: 2rem; }
+        .lede { color: var(--foreground-muted); font-size: 1rem; margin-bottom: 2rem; }
         .lede a { color: var(--primary); font-weight: 600; text-decoration: none; }
         .lede a:hover { text-decoration: underline; }
         .card {
             background: var(--background-card);
             border: 1px solid var(--border);
             border-radius: 0.75rem;
-            padding: 1.5rem;
-            margin-bottom: 1.25rem;
+            padding: 1.75rem 1.5rem;
+            margin-bottom: 1.5rem;
         }
-        .card h2 { font-size: 1rem; margin-bottom: 0.75rem; color: var(--foreground); }
-        .btn {
-            display: inline-block;
+        .card h2 { font-size: 1.05rem; margin-bottom: 1rem; color: var(--foreground); }
+        .cta {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            width: 100%;
             background: var(--primary);
             color: var(--background);
             border: none;
-            border-radius: 0.5rem;
-            padding: 0.65rem 1.25rem;
-            font-weight: 600;
+            border-radius: 0.6rem;
+            padding: 1rem 1.25rem;
+            font-weight: 700;
             font-family: inherit;
+            font-size: 1.05rem;
+            text-decoration: none;
             cursor: pointer;
+            transition: background 0.15s ease;
+        }
+        .cta:hover { background: var(--primary-dark); color: var(--background); }
+        .cta svg { flex-shrink: 0; }
+        .steps { list-style: none; counter-reset: step; }
+        .steps li {
+            position: relative;
+            padding-left: 2.5rem;
+            margin-bottom: 1rem;
+            color: var(--foreground-muted);
             font-size: 0.95rem;
         }
-        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-        .chat-input-row { display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; }
-        .chat-messages {
-            background: var(--background-secondary);
-            border: 1px solid var(--border);
-            border-radius: 0.5rem;
-            padding: 0.75rem;
-            min-height: 220px;
-            max-height: min(60vh, 520px);
-            overflow-y: auto;
-            margin-bottom: 0.75rem;
+        .steps li::before {
+            counter-increment: step;
+            content: counter(step);
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 1.65rem;
+            height: 1.65rem;
+            border-radius: 50%;
+            background: rgba(69,179,153,0.2);
+            color: var(--primary);
+            font-weight: 700;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
-        .chat-msg { margin-bottom: 0.75rem; max-width: 100%; }
-        .chat-msg-user {
-            text-align: right;
+        .secondary {
+            text-align: center;
+            font-size: 0.9rem;
             color: var(--foreground-muted);
-            font-size: 0.88rem;
+            margin-top: 1.25rem;
         }
-        .chat-msg-user span {
-            display: inline-block;
-            background: rgba(69,179,153,0.12);
-            border: 1px solid rgba(69,179,153,0.25);
-            padding: 0.45rem 0.65rem;
-            border-radius: 0.5rem;
-            text-align: left;
-            max-width: 100%;
-            word-break: break-word;
-            font-family: 'IBM Plex Mono', monospace;
-            font-size: 0.82rem;
-        }
-        .chat-msg-assistant .md-content {
-            font-size: 0.88rem;
-            line-height: 1.6;
-            color: var(--foreground-muted);
-        }
-        .chat-msg-assistant .md-content h1,
-        .chat-msg-assistant .md-content h2,
-        .chat-msg-assistant .md-content h3 {
-            font-size: 1rem;
-            margin: 0.85rem 0 0.4rem;
-            color: var(--foreground);
-            font-family: 'IBM Plex Serif', serif;
-        }
-        .chat-msg-assistant .md-content h1:first-child,
-        .chat-msg-assistant .md-content h2:first-child { margin-top: 0; }
-        .chat-msg-assistant .md-content p { margin: 0.4rem 0; }
-        .chat-msg-assistant .md-content ul, .chat-msg-assistant .md-content ol {
-            margin: 0.4rem 0 0.4rem 1.15rem;
-        }
-        .chat-msg-assistant .md-content code {
-            font-size: 0.83em;
-            background: rgba(0,0,0,0.35);
-            padding: 0.12em 0.4em;
-            border-radius: 0.25rem;
-            font-family: 'IBM Plex Mono', monospace;
-        }
-        .chat-msg-assistant .md-content pre {
-            background: #0a100e;
-            padding: 0.65rem;
-            border-radius: 0.45rem;
-            overflow-x: auto;
-            font-size: 0.72rem;
-            margin: 0.5rem 0;
-        }
-        .chat-msg-assistant .md-content a { color: var(--primary); }
-        .chat-msg-assistant .md-content hr {
-            border: none;
-            border-top: 1px solid var(--border);
-            margin: 0.75rem 0;
-        }
-        .chat-msg-system {
+        .secondary a { color: var(--primary); font-weight: 600; text-decoration: none; }
+        .secondary a:hover { text-decoration: underline; }
+        .note {
             font-size: 0.82rem;
             color: var(--foreground-tertiary);
-            font-style: italic;
+            margin-top: 1.25rem;
+            line-height: 1.5;
         }
-        .chat-typing { color: var(--foreground-tertiary); font-size: 0.9rem; padding: 0.35rem 0; }
-        #chat-input {
-            flex: 1;
-            min-width: 140px;
-            background: #0a100e;
-            border: 1px solid var(--border);
-            border-radius: 0.5rem;
-            padding: 0.65rem 0.75rem;
-            color: var(--foreground);
-            font-family: 'IBM Plex Mono', monospace;
-            font-size: 0.88rem;
-        }
-        #chat-input:focus { outline: none; border-color: var(--primary); }
         .powered-by {
             font-size: 0.8rem;
             color: var(--foreground-tertiary);
             text-align: center;
-            margin-top: 2rem;
+            margin-top: 2.5rem;
         }
         .powered-by a { color: var(--primary); text-decoration: none; font-weight: 600; }
     </style>
@@ -185,149 +142,37 @@
         </nav>
     </header>
     <main>
-        <h1>Analbot</h1>
+        <h1>Analbot lives on Telegram</h1>
         <p class="lede">
-            Paste any Solana <strong>token mint</strong> or <strong>wallet address</strong> to get a full on-chain research report.
-            Grade, deployer, top holders, price action, RugCheck, lock analysis, and smart follow-up suggestions —
-            powered by <a href="https://www.helius.dev/docs" target="_blank" rel="noopener noreferrer">Helius</a>,
-            DexScreener, RugCheck &amp; Jupiter. DYOR.
+            Full Solana <strong>token</strong> and <strong>wallet</strong> research — grades, deployer history, top holders, price action, RugCheck, lock analysis, and natural follow-ups — runs in
+            <a href="https://t.me/AnalAgent_bot" target="_blank" rel="noopener noreferrer">Telegram</a>.
+            Data from <a href="https://www.helius.dev/docs" target="_blank" rel="noopener noreferrer">Helius</a>, DexScreener, RugCheck &amp; Jupiter. DYOR.
         </p>
 
         <div class="card">
-            <h2>Research</h2>
-            <div id="chat-messages" class="chat-messages" aria-live="polite"></div>
-            <div class="chat-input-row">
-                <input type="text" id="chat-input" placeholder="Paste a Solana token or wallet address…" autocomplete="off" spellcheck="false" />
-                <button type="button" class="btn" id="chat-send">Research</button>
-            </div>
+            <h2>Open the bot</h2>
+            <a class="cta" href="https://t.me/AnalAgent_bot" target="_blank" rel="noopener noreferrer">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg>
+                Start Analbot on Telegram
+            </a>
+            <p class="secondary">
+                Quick lookups on X: <a href="https://x.com/analbylana" target="_blank" rel="noopener noreferrer">@analbylana</a> — tweet a Solana address.
+            </p>
+        </div>
+
+        <div class="card">
+            <h2>How to use</h2>
+            <ol class="steps">
+                <li>Tap <strong>Start</strong> in Telegram (or add the bot to a group).</li>
+                <li>Paste a <strong>token mint</strong> or <strong>wallet</strong> address — or use <code style="background:rgba(0,0,0,.35);padding:0.1em 0.35em;border-radius:0.25rem;font-size:0.88em;">/q &lt;address&gt;</code>.</li>
+                <li>Ask follow-ups in plain English in the same chat; use <code style="background:rgba(0,0,0,.35);padding:0.1em 0.35em;border-radius:0.25rem;font-size:0.88em;">/reset</code> to clear context.</li>
+            </ol>
+            <p class="note">
+                <strong>Groups:</strong> add <a href="https://t.me/AnalAgent_bot" target="_blank" rel="noopener noreferrer">@AnalAgent_bot</a> as a member. Use <code style="background:rgba(0,0,0,.35);padding:0.1em 0.35em;border-radius:0.25rem;font-size:0.88em;">/q</code> or include a Solana address in your message. If the bot doesn’t see plain messages, mention <strong>@AnalAgent_bot</strong> or ask the group admin to turn off <em>Group Privacy</em> for the bot in BotFather.
+            </p>
         </div>
 
         <p class="powered-by">Powered by <a href="https://analbylana.xyz" target="_blank" rel="noopener noreferrer">$ANAL</a></p>
     </main>
-
-    <script src="https://cdn.jsdelivr.net/npm/marked@12.0.0/marked.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.8/dist/purify.min.js"></script>
-    <script>
-        const CONFIG = { API_URL: 'https://analx-production-76f1.up.railway.app' };
-
-        const chatMessages = document.getElementById('chat-messages');
-        const chatInput = document.getElementById('chat-input');
-        const chatSend = document.getElementById('chat-send');
-        let chatTypingEl = null;
-
-        function chatScroll() {
-            if (chatMessages) chatMessages.scrollTop = chatMessages.scrollHeight;
-        }
-
-        function appendUser(text) {
-            if (!chatMessages) return;
-            const wrap = document.createElement('div');
-            wrap.className = 'chat-msg chat-msg-user';
-            const span = document.createElement('span');
-            span.textContent = text;
-            wrap.appendChild(span);
-            chatMessages.appendChild(wrap);
-            chatScroll();
-        }
-
-        function appendAssistantMarkdown(text) {
-            if (!chatMessages || !text) return;
-            const wrap = document.createElement('div');
-            wrap.className = 'chat-msg chat-msg-assistant';
-            const inner = document.createElement('div');
-            inner.className = 'md-content';
-            try {
-                if (typeof marked !== 'undefined' && marked.parse) {
-                    const raw = marked.parse(String(text), { breaks: true });
-                    inner.innerHTML = typeof DOMPurify !== 'undefined' ? DOMPurify.sanitize(raw) : raw;
-                } else {
-                    inner.textContent = text;
-                }
-            } catch (e) {
-                inner.textContent = text;
-            }
-            wrap.appendChild(inner);
-            chatMessages.appendChild(wrap);
-            chatScroll();
-        }
-
-        function showTyping() {
-            if (!chatMessages) return;
-            hideTyping();
-            chatTypingEl = document.createElement('div');
-            chatTypingEl.className = 'chat-msg chat-typing';
-            chatTypingEl.textContent = 'Researching…';
-            chatMessages.appendChild(chatTypingEl);
-            chatScroll();
-        }
-
-        function hideTyping() {
-            if (chatTypingEl && chatTypingEl.parentNode) {
-                chatTypingEl.parentNode.removeChild(chatTypingEl);
-            }
-            chatTypingEl = null;
-        }
-
-        function abortAfter(ms) {
-            if (typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function') {
-                return AbortSignal.timeout(ms);
-            }
-            const c = new AbortController();
-            setTimeout(function () { c.abort(); }, ms);
-            return c.signal;
-        }
-
-        async function sendResearch() {
-            if (!chatInput || !chatSend) return;
-            const text = chatInput.value.trim();
-            if (!text) return;
-            chatInput.value = '';
-            appendUser(text);
-            showTyping();
-            chatSend.disabled = true;
-            try {
-                const r = await fetch(CONFIG.API_URL + '/api/research', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ message: text }),
-                    signal: abortAfter(120000),
-                });
-                hideTyping();
-                const bodyText = await r.text();
-                let data;
-                try {
-                    data = JSON.parse(bodyText);
-                } catch (_) {
-                    appendAssistantMarkdown('Invalid response from server.');
-                    return;
-                }
-                if (!r.ok) {
-                    const errMsg = data.message || data.error || bodyText || 'Request failed';
-                    appendAssistantMarkdown('**Error:** ' + errMsg);
-                    return;
-                }
-                appendAssistantMarkdown(data.response);
-            } catch (e) {
-                hideTyping();
-                appendAssistantMarkdown('**Error:** ' + (e.message || String(e)));
-            } finally {
-                chatSend.disabled = false;
-                if (chatInput) chatInput.focus();
-            }
-        }
-
-        // Welcome message
-        appendAssistantMarkdown(
-            '**Welcome to Analbot.**\n\nPaste any Solana token mint or wallet address to get a full research report — grade, deployer info, top holders, price action, lock analysis, RugCheck score, and smart follow-up suggestions.\n\n_Powered by [$ANAL](https://analbylana.xyz)_'
-        );
-
-        chatSend.addEventListener('click', sendResearch);
-        chatInput.addEventListener('keydown', function (e) {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                sendResearch();
-            }
-        });
-    </script>
 </body>
 </html>
